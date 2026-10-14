@@ -10,9 +10,7 @@
   function applyBaseRpData(){
     try{
       if(typeof LEVEL_RP==='undefined')return false;
-      BASE_RP_301_350.forEach((value,index)=>{
-        LEVEL_RP[301+index]=value;
-      });
+      BASE_RP_301_350.forEach((value,index)=>{ LEVEL_RP[301+index]=value; });
       return LEVEL_RP[301]===20566800 && LEVEL_RP[350]===298516214;
     }catch(e){
       console.error('v10.24 RP data patch failed',e);
@@ -23,20 +21,15 @@
   let dataApplied=applyBaseRpData();
   const timer=setInterval(()=>{
     if(!dataApplied)dataApplied=applyBaseRpData();
-
-    const version=document.querySelector('.version');
     const appReady=!!document.getElementById('calcRbBtn');
-    if(version && appReady){
-      version.textContent='v10.24';
-      if(dataApplied){
-        clearInterval(timer);
-        console.info('[RansWorldSimulator v10.24] Lv.301~350 base reincarnation RP corrected.');
-      }
+    if(appReady && dataApplied){
+      clearInterval(timer);
+      console.info('[RansWorldSimulator] Lv.301~350 base reincarnation RP corrected.');
     }
   },80);
 
   setTimeout(()=>{
     clearInterval(timer);
-    if(!dataApplied)console.error('v10.24 RP patch timed out before LEVEL_RP became available.');
+    if(!dataApplied)console.error('RP patch timed out before LEVEL_RP became available.');
   },10000);
 })();
