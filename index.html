@@ -185,14 +185,81 @@ function loadShop(){
   const raw=localStorage.getItem(STORAGE_KEY);if(!raw){alert("저장된 선택이 없습니다.");return}
   try{const d=JSON.parse(raw);$("owned").value=d.owned??0;(d.state||[]).forEach((s,i)=>{if(products[i]){products[i].ticks=clamp(Number(s.ticks)||0,0,products[i].maxTicks);products[i].locked=!!s.locked}});renderShop()}catch(e){alert("저장 데이터를 불러오지 못했습니다.")}
 }`,`let shopViewMode=localStorage.getItem("RansWorldSimulator-shop-view")==="compact"?"compact":"detail";
-function applyShopView(){const shop=$("shop");shop.classList.toggle("compact",shopViewMode==="compact");const btn=$("viewModeBtn");if(btn)btn.textContent=shopViewMode==="compact"?"자세히 보기":"간단히 보기"}
-function toggleShopView(){shopViewMode=shopViewMode==="compact"?"detail":"compact";localStorage.setItem("RansWorldSimulator-shop-view",shopViewMode);applyShopView()}
-function buildShopSave(){return{format:"RansWorldSimulator",saveVersion:1,appVersion:"v10.9",savedAt:new Date().toISOString(),owned:String($("owned").value??0),viewMode:shopViewMode,products:products.map(p=>({id:p.id,ticks:p.ticks,locked:!!p.locked}))}}
-function applyShopSave(d){if(!d||typeof d!=="object")throw new Error("저장 데이터 형식이 올바르지 않습니다.");$("owned").value=d.owned??0;const state=Array.isArray(d.products)?d.products:Array.isArray(d.state)?d.state:[];if(state.length){const byId=new Map(state.filter(x=>x&&x.id).map(x=>[x.id,x]));products.forEach((p,i)=>{const s=byId.get(p.id)||(!byId.size?state[i]:null);if(!s)return;p.ticks=clamp(Number(s.ticks)||0,0,p.maxTicks);p.locked=!!s.locked})}if(d.viewMode==="compact"||d.viewMode==="detail"){shopViewMode=d.viewMode;localStorage.setItem("RansWorldSimulator-shop-view",shopViewMode)}renderShop();applyShopView()}
-function saveShop(){localStorage.setItem(STORAGE_KEY,JSON.stringify(buildShopSave()));alert("현재 RP 상점 설정을 이 브라우저에 저장했습니다.")}
-function loadShop(){const raw=localStorage.getItem(STORAGE_KEY);if(!raw){alert("이 브라우저에 저장된 RP 상점 설정이 없습니다.");return}try{applyShopSave(JSON.parse(raw))}catch(e){console.error(e);alert("브라우저 저장 데이터를 불러오지 못했습니다.")}}
-function exportShopJson(){const data=JSON.stringify(buildShopSave(),null,2),blob=new Blob([data],{type:"application/json;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a"),stamp=new Date(),pad2=n=>String(n).padStart(2,"0");a.href=url;a.download=`RansWorldSimulator_RP_${stamp.getFullYear()}${pad2(stamp.getMonth()+1)}${pad2(stamp.getDate())}_${pad2(stamp.getHours())}${pad2(stamp.getMinutes())}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
-async function importShopJsonFile(file){if(!file)return;try{const text=await file.text(),d=JSON.parse(text);if(d.format&&d.format!=="RansWorldSimulator")throw new Error("RansWorldSimulator 저장 파일이 아닙니다.");applyShopSave(d);alert("JSON 저장 파일을 불러왔습니다.")}catch(e){console.error(e);alert(e?.message||"JSON 저장 파일을 불러오지 못했습니다.")}finally{$("importFile").value=""}}`,'shop save/load v10.9');
+function applyShopView(){
+  const shop=$("shop");
+  shop.classList.toggle("compact",shopViewMode==="compact");
+  const btn=$("viewModeBtn");
+  if(btn)btn.textContent=shopViewMode==="compact"?"자세히 보기":"간단히 보기";
+}
+function toggleShopView(){
+  shopViewMode=shopViewMode==="compact"?"detail":"compact";
+  localStorage.setItem("RansWorldSimulator-shop-view",shopViewMode);
+  applyShopView();
+}
+function buildShopSave(){
+  return{
+    format:"RansWorldSimulator",
+    saveVersion:1,
+    appVersion:"v10.9",
+    savedAt:new Date().toISOString(),
+    owned:String($("owned").value??0),
+    viewMode:shopViewMode,
+    products:products.map(p=>({id:p.id,ticks:p.ticks,locked:!!p.locked}))
+  };
+}
+function applyShopSave(d){
+  if(!d||typeof d!=="object")throw new Error("저장 데이터 형식이 올바르지 않습니다.");
+  $("owned").value=d.owned??0;
+  const state=Array.isArray(d.products)?d.products:Array.isArray(d.state)?d.state:[];
+  if(state.length){
+    const byId=new Map(state.filter(x=>x&&x.id).map(x=>[x.id,x]));
+    products.forEach((p,i)=>{
+      const s=byId.get(p.id)||(!byId.size?state[i]:null);
+      if(!s)return;
+      p.ticks=clamp(Number(s.ticks)||0,0,p.maxTicks);
+      p.locked=!!s.locked;
+    });
+  }
+  if(d.viewMode==="compact"||d.viewMode==="detail"){
+    shopViewMode=d.viewMode;
+    localStorage.setItem("RansWorldSimulator-shop-view",shopViewMode);
+  }
+  renderShop();
+  applyShopView();
+}
+function saveShop(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(buildShopSave()));
+  alert("현재 RP 상점 설정을 이 브라우저에 저장했습니다.");
+}
+function loadShop(){
+  const raw=localStorage.getItem(STORAGE_KEY);
+  if(!raw){alert("이 브라우저에 저장된 RP 상점 설정이 없습니다.");return}
+  try{applyShopSave(JSON.parse(raw))}
+  catch(e){console.error(e);alert("브라우저 저장 데이터를 불러오지 못했습니다.")}
+}
+function exportShopJson(){
+  const data=JSON.stringify(buildShopSave(),null,2);
+  const blob=new Blob([data],{type:"application/json;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  const stamp=new Date(),pad2=n=>String(n).padStart(2,"0");
+  a.href=url;
+  a.download="RansWorldSimulator_RP_"+stamp.getFullYear()+pad2(stamp.getMonth()+1)+pad2(stamp.getDate())+"_"+pad2(stamp.getHours())+pad2(stamp.getMinutes())+".json";
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+async function importShopJsonFile(file){
+  if(!file)return;
+  try{
+    const text=await file.text(),d=JSON.parse(text);
+    if(d.format&&d.format!=="RansWorldSimulator")throw new Error("RansWorldSimulator 저장 파일이 아닙니다.");
+    applyShopSave(d);
+    alert("JSON 저장 파일을 불러왔습니다.");
+  }catch(e){
+    console.error(e);
+    alert(e?.message||"JSON 저장 파일을 불러오지 못했습니다.");
+  }finally{$("importFile").value=""}
+}`,'shop save/load v10.9');
 
     patch(`  }).join("");
   calcShop();
