@@ -10,20 +10,19 @@ body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b102
 </style>
 </head>
 <body>
-<div class="loading"><b>RansWorldSimulator</b><span>v10.8 페이지를 불러오는 중...</span></div>
+<div class="loading"><b>RansWorldSimulator</b><span>v10.9 페이지를 불러오는 중...</span></div>
 <script>
 (async()=>{
   try{
-    const r=await fetch('./app-base.html?v=10.8',{cache:'no-cache'});
+    const r=await fetch('./app-base.html?v=10.9',{cache:'no-cache'});
     if(!r.ok)throw new Error(`app-base.html: ${r.status}`);
     let h=await r.text();
 
     const patch=(from,to,label)=>{
-      if(!h.includes(from))throw new Error(`v10.8 패치 실패: ${label}`);
+      if(!h.includes(from))throw new Error(`v10.9 패치 실패: ${label}`);
       h=h.replace(from,to);
     };
 
-    // v10.5 · EXP inputs show thousands separators.
     patch('<input id="expA" type="number" min="0" max="100" step="0.01" value="0">','<input id="expA" type="text" inputmode="decimal" value="0">','expA');
     patch('<input id="expB" type="number" min="0" max="100" step="0.01" value="0">','<input id="expB" type="text" inputmode="decimal" value="0">','expB');
     patch('<input id="rbExp" type="number" min="0" max="100" step="0.01" value="0">','<input id="rbExp" type="text" inputmode="decimal" value="0">','rbExp');
@@ -99,7 +98,6 @@ updateRbMode();
 $("rbExp").addEventListener("input",()=>formatExpInput($("rbExp"),$("rbExpMode").value==="pct"?"pct":"raw",true));
 $("rbExp").addEventListener("blur",()=>formatExpInput($("rbExp"),$("rbExpMode").value==="pct"?"pct":"raw",false));`,'rebirth mode');
 
-    // v10.6 · input labels/defaults/readability.
     patch('시작시각 · 24시간','시작시각 (24시간 형식)','start time label');
     patch('종료시각 · 24시간','종료시각 (24시간 형식)','end time label');
     patch('이번 환생 시작 시각 · 24시간','이번 환생 시작 시각 (24시간 형식)','rebirth start time label');
@@ -111,67 +109,106 @@ $("rbExp").addEventListener("blur",()=>formatExpInput($("rbExp"),$("rbExpMode").
     patch('</style>','#rbRate::placeholder{font-size:12px;letter-spacing:-.02em}\n</style>','rebirth rate placeholder size');
     patch('const now=new Date();$("timeA").value=formatInputDate(now);$("timeB").value=formatInputDate(now);$("rbNow").value=formatInputDate(now);','const now=new Date();$("rbNow").value=formatInputDate(now);','EXP date defaults blank');
 
-    patch('<div class="version">v10.4</div>','<div class="version">v10.8</div>','version');
+    patch('<div class="version">v10.4</div>','<div class="version">v10.9</div>','version');
 
-    // v10.7 · RP shop SP / movement-speed pricing correction.
     patch('const pricing=DATA.pricing;',`const pricing=DATA.pricing;
 (()=>{
   const oldSp=[...DATA.pricing.sp.prices];
   const sp=[...oldSp];
-
   sp[0]=20;
   for(let n=1;n<10;n++)sp[n]=20*n;
-
   sp[10]=220;
   for(let n=11;n<=20;n++)sp[n]=220+72*(n-10);
-
   for(let n=21;n<=30;n++)sp[n]=940+226*(n-20);
   for(let n=31;n<=40;n++)sp[n]=3200+600*(n-30);
   for(let n=41;n<=50;n++)sp[n]=9200+1080*(n-40);
-
   for(let n=51;n<=60;n++)sp[n]=20000+2040*(n-50);
   for(let n=61;n<=70;n++)sp[n]=40400+3100*(n-60);
   for(let n=71;n<=80;n++)sp[n]=71400+4124*(n-70);
   for(let n=81;n<=90;n++)sp[n]=112640+5136*(n-80);
-
   const shift=oldSp[90]-sp[90];
   for(let n=91;n<sp.length;n++)sp[n]=Math.max(0,oldSp[n]-shift);
-
   DATA.pricing.sp.prices=sp;
   DATA.pricing.sp.exact=21;
   DATA.pricing.sp.method="Lv.0~20은 사용자 확인값/공차를 반영. Lv.21~90은 10레벨마다 공차가 바뀐다는 가설을 +33=5,000 / +50=20,000 / +66=59,000 / +90=164,000 실측값에 맞춰 보정한 추정. Lv.91 이후는 기존 비용표 흐름을 +90 실측값에 맞춰 보정한 추정";
-
   DATA.pricing.move.prices=Array.from({length:100},(_,n)=>50+25*n);
   DATA.pricing.move.exact=100;
   DATA.pricing.move.method="사용자 실측 기준: 최초 50 RP, 이후 공차 +25 RP (+2.0%에서 150 RP, +28.0%에서 1,450 RP 확인)";
 })();`,'RP pricing v10.7');
 
-    // v10.8 · icon/button alignment and disabled-field readability.
     patch('</style>',`/* v10.8 · small alignment/readability polish */
-.estimate-btn{
-  display:inline-grid;place-items:center;
-  width:24px;height:24px;min-width:24px;min-height:24px;
-  padding:0;line-height:1;font-size:15px;
-  overflow:visible;vertical-align:middle
-}
+.estimate-btn{display:inline-grid;place-items:center;width:24px;height:24px;min-width:24px;min-height:24px;padding:0;line-height:1;font-size:15px;overflow:visible;vertical-align:middle}
 .tip-wrap{align-items:center;vertical-align:middle;flex:0 0 auto}
 .metric-line{align-items:center}
 .metric-line .number{margin-top:0;line-height:1.15}
 .pvalue{line-height:1.15}
-.help-btn{
-  display:inline-grid;place-items:center;
-  line-height:1;font-size:14px;vertical-align:middle
-}
+.help-btn{display:inline-grid;place-items:center;line-height:1;font-size:14px;vertical-align:middle}
 .pname-row{align-items:center}
-.field input:disabled,.field select:disabled{
-  opacity:.48;
-  background:#0b1424;
-  color:#70809a;
-  border-color:#253650;
-  cursor:not-allowed;
-  box-shadow:none
-}
+.field input:disabled,.field select:disabled{opacity:.48;background:#0b1424;color:#70809a;border-color:#253650;cursor:not-allowed;box-shadow:none}
 </style>`,'UI alignment v10.8');
+
+    patch(`      <div class="toolbar">
+        <button class="btn primary" id="saveBtn" type="button">현재 선택 저장</button>
+        <button class="btn" id="loadBtn" type="button">저장 불러오기</button>
+        <button class="btn danger" id="resetBtn" type="button">전체 초기화</button>
+      </div>
+      <div id="shop" class="shop-grid"></div>`,`      <div class="toolbar shop-toolbar">
+        <button class="btn view-toggle" id="viewModeBtn" type="button">간단히 보기</button>
+        <button class="btn primary" id="saveBtn" type="button">브라우저 저장</button>
+        <button class="btn" id="loadBtn" type="button">브라우저 불러오기</button>
+        <button class="btn" id="exportBtn" type="button">JSON 저장</button>
+        <button class="btn" id="importBtn" type="button">JSON 불러오기</button>
+        <input id="importFile" type="file" accept=".json,application/json" hidden>
+        <button class="btn danger" id="resetBtn" type="button">전체 초기화</button>
+      </div>
+      <div id="shop" class="shop-grid"></div>`,'RP shop toolbar v10.9');
+
+    patch('</style>',`/* v10.9 · RP shop compact/detail view + JSON save/load */
+.shop-toolbar .view-toggle{border-color:#4f70a1;background:#132743;color:#cfe5ff}
+.shop-grid.compact{grid-template-columns:repeat(4,minmax(0,1fr))}
+.shop-grid.compact .product{padding:11px 12px}
+.shop-grid.compact .pimg,.shop-grid.compact .pspec{display:none}
+.shop-grid.compact .pvalue{font-size:18px;padding-right:62px;margin-bottom:3px}
+.shop-grid.compact .pname-row{min-height:34px;margin:3px 0 6px;justify-content:flex-start}
+.shop-grid.compact .pname{min-height:0;text-align:left;place-items:start;font-size:13px}
+.shop-grid.compact .level-row{padding:6px 0}
+.shop-grid.compact .quick button{padding:6px 2px}
+.shop-grid.compact .cost{padding-top:6px;margin-top:6px}
+.shop-grid.compact .product-help-tip{top:42px}
+@media(max-width:1100px){.shop-grid.compact{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:760px){.shop-grid.compact{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.shop-grid.compact{grid-template-columns:1fr}}
+</style>`,'compact view CSS v10.9');
+
+    patch(`function saveShop(){localStorage.setItem(STORAGE_KEY,JSON.stringify({owned:$("owned").value,state:products.map(p=>({ticks:p.ticks,locked:!!p.locked}))}));alert("현재 선택을 저장했습니다.")}
+function loadShop(){
+  const raw=localStorage.getItem(STORAGE_KEY);if(!raw){alert("저장된 선택이 없습니다.");return}
+  try{const d=JSON.parse(raw);$("owned").value=d.owned??0;(d.state||[]).forEach((s,i)=>{if(products[i]){products[i].ticks=clamp(Number(s.ticks)||0,0,products[i].maxTicks);products[i].locked=!!s.locked}});renderShop()}catch(e){alert("저장 데이터를 불러오지 못했습니다.")}
+}`,`let shopViewMode=localStorage.getItem("RansWorldSimulator-shop-view")==="compact"?"compact":"detail";
+function applyShopView(){const shop=$("shop");shop.classList.toggle("compact",shopViewMode==="compact");const btn=$("viewModeBtn");if(btn)btn.textContent=shopViewMode==="compact"?"자세히 보기":"간단히 보기"}
+function toggleShopView(){shopViewMode=shopViewMode==="compact"?"detail":"compact";localStorage.setItem("RansWorldSimulator-shop-view",shopViewMode);applyShopView()}
+function buildShopSave(){return{format:"RansWorldSimulator",saveVersion:1,appVersion:"v10.9",savedAt:new Date().toISOString(),owned:String($("owned").value??0),viewMode:shopViewMode,products:products.map(p=>({id:p.id,ticks:p.ticks,locked:!!p.locked}))}}
+function applyShopSave(d){if(!d||typeof d!=="object")throw new Error("저장 데이터 형식이 올바르지 않습니다.");$("owned").value=d.owned??0;const state=Array.isArray(d.products)?d.products:Array.isArray(d.state)?d.state:[];if(state.length){const byId=new Map(state.filter(x=>x&&x.id).map(x=>[x.id,x]));products.forEach((p,i)=>{const s=byId.get(p.id)||(!byId.size?state[i]:null);if(!s)return;p.ticks=clamp(Number(s.ticks)||0,0,p.maxTicks);p.locked=!!s.locked})}if(d.viewMode==="compact"||d.viewMode==="detail"){shopViewMode=d.viewMode;localStorage.setItem("RansWorldSimulator-shop-view",shopViewMode)}renderShop();applyShopView()}
+function saveShop(){localStorage.setItem(STORAGE_KEY,JSON.stringify(buildShopSave()));alert("현재 RP 상점 설정을 이 브라우저에 저장했습니다.")}
+function loadShop(){const raw=localStorage.getItem(STORAGE_KEY);if(!raw){alert("이 브라우저에 저장된 RP 상점 설정이 없습니다.");return}try{applyShopSave(JSON.parse(raw))}catch(e){console.error(e);alert("브라우저 저장 데이터를 불러오지 못했습니다.")}}
+function exportShopJson(){const data=JSON.stringify(buildShopSave(),null,2),blob=new Blob([data],{type:"application/json;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a"),stamp=new Date(),pad2=n=>String(n).padStart(2,"0");a.href=url;a.download=`RansWorldSimulator_RP_${stamp.getFullYear()}${pad2(stamp.getMonth()+1)}${pad2(stamp.getDate())}_${pad2(stamp.getHours())}${pad2(stamp.getMinutes())}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+async function importShopJsonFile(file){if(!file)return;try{const text=await file.text(),d=JSON.parse(text);if(d.format&&d.format!=="RansWorldSimulator")throw new Error("RansWorldSimulator 저장 파일이 아닙니다.");applyShopSave(d);alert("JSON 저장 파일을 불러왔습니다.")}catch(e){console.error(e);alert(e?.message||"JSON 저장 파일을 불러오지 못했습니다.")}finally{$("importFile").value=""}}`,'shop save/load v10.9');
+
+    patch(`  }).join("");
+  calcShop();
+}`,`  }).join("");
+  calcShop();
+  applyShopView();
+}`,'render compact state v10.9');
+
+    patch('$("owned").addEventListener("input",calcShop);$("saveBtn").onclick=saveShop;$("loadBtn").onclick=loadShop;$("resetBtn").onclick=resetShop;',`$("owned").addEventListener("input",calcShop);
+$("viewModeBtn").onclick=toggleShopView;
+$("saveBtn").onclick=saveShop;
+$("loadBtn").onclick=loadShop;
+$("exportBtn").onclick=exportShopJson;
+$("importBtn").onclick=()=>$("importFile").click();
+$("importFile").addEventListener("change",e=>importShopJsonFile(e.target.files?.[0]));
+$("resetBtn").onclick=resetShop;`,'shop handlers v10.9');
 
     document.open();
     document.write(h);
