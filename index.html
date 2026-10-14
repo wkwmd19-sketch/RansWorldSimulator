@@ -10,16 +10,16 @@ body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b102
 </style>
 </head>
 <body>
-<div class="loading"><b>RansWorldSimulator</b><span>v10.7 페이지를 불러오는 중...</span></div>
+<div class="loading"><b>RansWorldSimulator</b><span>v10.8 페이지를 불러오는 중...</span></div>
 <script>
 (async()=>{
   try{
-    const r=await fetch('./app-base.html?v=10.7',{cache:'no-cache'});
+    const r=await fetch('./app-base.html?v=10.8',{cache:'no-cache'});
     if(!r.ok)throw new Error(`app-base.html: ${r.status}`);
     let h=await r.text();
 
     const patch=(from,to,label)=>{
-      if(!h.includes(from))throw new Error(`v10.7 패치 실패: ${label}`);
+      if(!h.includes(from))throw new Error(`v10.8 패치 실패: ${label}`);
       h=h.replace(from,to);
     };
 
@@ -111,7 +111,7 @@ $("rbExp").addEventListener("blur",()=>formatExpInput($("rbExp"),$("rbExpMode").
     patch('</style>','#rbRate::placeholder{font-size:12px;letter-spacing:-.02em}\n</style>','rebirth rate placeholder size');
     patch('const now=new Date();$("timeA").value=formatInputDate(now);$("timeB").value=formatInputDate(now);$("rbNow").value=formatInputDate(now);','const now=new Date();$("rbNow").value=formatInputDate(now);','EXP date defaults blank');
 
-    patch('<div class="version">v10.4</div>','<div class="version">v10.7</div>','version');
+    patch('<div class="version">v10.4</div>','<div class="version">v10.8</div>','version');
 
     // v10.7 · RP shop SP / movement-speed pricing correction.
     patch('const pricing=DATA.pricing;',`const pricing=DATA.pricing;
@@ -145,6 +145,33 @@ $("rbExp").addEventListener("blur",()=>formatExpInput($("rbExp"),$("rbExpMode").
   DATA.pricing.move.exact=100;
   DATA.pricing.move.method="사용자 실측 기준: 최초 50 RP, 이후 공차 +25 RP (+2.0%에서 150 RP, +28.0%에서 1,450 RP 확인)";
 })();`,'RP pricing v10.7');
+
+    // v10.8 · icon/button alignment and disabled-field readability.
+    patch('</style>',`/* v10.8 · small alignment/readability polish */
+.estimate-btn{
+  display:inline-grid;place-items:center;
+  width:24px;height:24px;min-width:24px;min-height:24px;
+  padding:0;line-height:1;font-size:15px;
+  overflow:visible;vertical-align:middle
+}
+.tip-wrap{align-items:center;vertical-align:middle;flex:0 0 auto}
+.metric-line{align-items:center}
+.metric-line .number{margin-top:0;line-height:1.15}
+.pvalue{line-height:1.15}
+.help-btn{
+  display:inline-grid;place-items:center;
+  line-height:1;font-size:14px;vertical-align:middle
+}
+.pname-row{align-items:center}
+.field input:disabled,.field select:disabled{
+  opacity:.48;
+  background:#0b1424;
+  color:#70809a;
+  border-color:#253650;
+  cursor:not-allowed;
+  box-shadow:none
+}
+</style>`,'UI alignment v10.8');
 
     document.open();
     document.write(h);
