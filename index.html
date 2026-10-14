@@ -10,19 +10,20 @@ body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b102
 </style>
 </head>
 <body>
-<div class="loading"><b>RansWorldSimulator</b><span>v10.5 페이지를 불러오는 중...</span></div>
+<div class="loading"><b>RansWorldSimulator</b><span>v10.6 페이지를 불러오는 중...</span></div>
 <script>
 (async()=>{
   try{
-    const r=await fetch('./app-base.html?v=10.5',{cache:'no-cache'});
+    const r=await fetch('./app-base.html?v=10.6',{cache:'no-cache'});
     if(!r.ok)throw new Error(`app-base.html: ${r.status}`);
     let h=await r.text();
 
     const patch=(from,to,label)=>{
-      if(!h.includes(from))throw new Error(`v10.5 패치 실패: ${label}`);
+      if(!h.includes(from))throw new Error(`v10.6 패치 실패: ${label}`);
       h=h.replace(from,to);
     };
 
+    // v10.5 · EXP inputs show thousands separators.
     patch('<input id="expA" type="number" min="0" max="100" step="0.01" value="0">','<input id="expA" type="text" inputmode="decimal" value="0">','expA');
     patch('<input id="expB" type="number" min="0" max="100" step="0.01" value="0">','<input id="expB" type="text" inputmode="decimal" value="0">','expB');
     patch('<input id="rbExp" type="number" min="0" max="100" step="0.01" value="0">','<input id="rbExp" type="text" inputmode="decimal" value="0">','rbExp');
@@ -98,7 +99,19 @@ updateRbMode();
 $("rbExp").addEventListener("input",()=>formatExpInput($("rbExp"),$("rbExpMode").value==="pct"?"pct":"raw",true));
 $("rbExp").addEventListener("blur",()=>formatExpInput($("rbExp"),$("rbExpMode").value==="pct"?"pct":"raw",false));`,'rebirth mode');
 
-    patch('<div class="version">v10.4</div>','<div class="version">v10.5</div>','version');
+    // v10.6 · input labels/defaults/readability.
+    patch('시작시각 · 24시간','시작시각 (24시간 형식)','start time label');
+    patch('종료시각 · 24시간','종료시각 (24시간 형식)','end time label');
+    patch('이번 환생 시작 시각 · 24시간','이번 환생 시작 시각 (24시간 형식)','rebirth start time label');
+    patch('현재 시각 · 24시간','현재 시각 (24시간 형식)','rebirth current time label');
+
+    patch('<input id="levelA" type="number" min="1" max="350" value="1">','<input id="levelA" type="number" min="1" max="350" placeholder="예: 286">','start level blank');
+    patch('<input id="levelB" type="number" min="1" max="350" value="1">','<input id="levelB" type="number" min="1" max="350" placeholder="예: 287">','end level blank');
+
+    patch('</style>','#rbRate::placeholder{font-size:12px;letter-spacing:-.02em}\n</style>','rebirth rate placeholder size');
+    patch('const now=new Date();$("timeA").value=formatInputDate(now);$("timeB").value=formatInputDate(now);$("rbNow").value=formatInputDate(now);','const now=new Date();$("rbNow").value=formatInputDate(now);','EXP date defaults blank');
+
+    patch('<div class="version">v10.4</div>','<div class="version">v10.6</div>','version');
 
     document.open();
     document.write(h);
