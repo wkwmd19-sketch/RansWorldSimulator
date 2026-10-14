@@ -1,0 +1,181 @@
+);
+  lines.push(`visible.exp=${$("exp"+side)?.value||""}`);
+  lines.push(`status=${$("ocrStatus"+side)?.textContent||""}`);
+
+  const blob=new Blob([lines.join("\n")],{type:"text/plain;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  const stamp=new Date().toISOString().replace(/[-:]/g,"").replace(/\..*/,"").replace("T","_");
+  a.href=url;
+  a.download=`RansWorldSimulator_OCR_${side}_${stamp}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+function v21Digits(s){ return String(s||"").replace(/\D/g,""); }
+
+function v21NumberGroups(value){
+  const s=String(Math.trunc(Number(value)||0));
+  if(!s)return [];
+  const first=s.length%3||3;
+  const out=[s.slice(0,first)];
+  for(let i=first;i<s.length;i+=3)out.push(s.slice(i,i+3));
+  return out;
+}
+
+function v21RawGroupHits(value,raws){
+  const groups=v21NumberGroups(value);
+  let hits=0;
+  for(const g of groups){
+    for(const raw of raws){
+      if(v21Digits(raw).includes(g))hits++;
+    }
+  }
+  return hits;
+}
+
+function v21DeletionSubseq(ds,targetLen,maxDelete=4){
+  const out=[];
+  if(!ds||targetLen<=0||ds.length<targetLen)return out;
+  const need=ds.length-targetLen;
+  if(need<0||need>maxDelete)return out;
+  function walk(pos,left,built){
+    if(left<0||built.length>targetLen)return;
+    if(pos===ds.length){
+      if(left===0&&built.length===targetLen)out.push(built);
+      return;
+    }
+    const remain=ds.length-pos;
+    if(built.length+remain-left<targetLen)return;
+    walk(pos+1,left,built+ds[pos]);
+    if(left>0)walk(pos+1,left-1,built);
+  }
+  walk(0,need,"");
+  return [...new Set(out)];
+}
+
+function v21GroupedDecode(ds,targetLen){
+  const out=[];
+  if(!ds||targetLen<=0)return out;
+  const first=targetLen%3||3;
+  const groupLens=[first];
+  for(let used=first;used<targetLen;used+=3)groupLens.push(3);
+
+  function rec(gi,pos,parts,cost,detail){
+    if(gi===groupLens.length){
+      const remain=ds.length-pos;
+      if(remain<=2){
+        out.push({
+          token:parts.join(""),
+          cost:cost+remain*.22,
+          detail:[...detail,{kind:"trail",skip:remain,text:ds.slice(pos)}]
+        });
+      }
+      return;
+    }
+    const gl=groupLens[gi];
+    if(pos+gl>ds.length)return;
+    const grp=ds.slice(pos,pos+gl);
+    const next=pos+gl;
+    if(gi===groupLens.length-1){
+      rec(gi+1,next,[...parts,grp],cost,detail);
+      return;
+    }
+    // 쉼표가 0~2개의 가짜 숫자로 읽히는 경우를 허용.
+    for(let skip=0;skip<=2;skip++){
+      if(next+skip<=ds.length){
+        rec(
+          gi+1,
+          next+skip,
+          [...parts,grp],
+          cost+skip*.08,
+          [...detail,{kind:"sep",skip,text:ds.slice(next,next+skip)}]
+        );
+      }
+    }
+  }
+
+  // Lv./괄호/슬래시 잔여 문자가 앞에 붙는 경우 소량 허용.
+  for(let lead=0;lead<=2;lead++){
+    rec(0,lead,[],lead*.42,[{kind:"lead",skip:lead,text:ds.slice(0,lead)}]);
+  }
+  return out;
+}
+
+function v21AddCandidate(map,value,cost,raw,meta={}){
+  if(!Number.isFinite(value)||value<0)return;
+  const key=String(value);
+  let c=map.get(key);
+  if(!c){
+    c={value,support:0,bestCost:Infinity,costSum:0,raws:[],meta:[]};
+    map.set(key,c);
+  }
+  c.support++;
+  c.bestCost=Math.min(c.bestCost,cost);
+  c.costSum+=cost;
+  if(c.raws.length<12)c.raws.push(String(raw||""));
+  if(c.meta.length<12)c.meta.push(meta);
+}
+
+function v21FinalizeCandidates(map,allRaws,{groupWeight=.04,supportWeight=.18}={}){
+  const arr=[...map.values()];
+  for(const c of arr){
+    c.groupHits=v21RawGroupHits(c.value,allRaws);
+    const avgCost=c.costSum/Math.max(1,c.support);
+    c.score=
+      c.bestCost+
+      avgCost*.12-
+      c.support*supportWeight-
+      c.groupHits*groupWeight;
+  }
+  arr.sort((a,b)=>a.score-b.score);
+  return arr;
+}
+
+function v21PercentFromRaw(raw){
+  const out=[];
+  let s=String(raw||"").replace(/[OoQ]/g,"0").replace(/,/g,".");
+  const direct=[...s.matchAll(/(\d{1,3}\.\d{1,2})/g)];
+  for(const m of direct){
+    const v=Number(m[1]);
+    if(Number.isFinite(v)&&v>=0&&v<=100)out.push({value:v,cost:-.3,kind:"decimal"});
+  }
+
+  const beforePct=s.includes("%")?s.slice(0,s.indexOf("%")):s;
+  const ds=v21Digits(beforePct);
+  for(const len of [3,4,5]){
+    const need=ds.length-len;
+    if(need<0||need>3)continue;
+    for(const token of v21DeletionSubseq(ds,len,3)){
+      const v=Number(token)/100;
+      if(Number.isFinite(v)&&v>=0&&v<=100){
+        // 10.84%처럼 소수 둘째자리 고정. 삭제가 적을수록 우선.
+        out.push({value:v,cost:need*.24+(len===4?0:.04),kind:"fixed2"});
+      }
+    }
+  }
+  return out;
+}
+
+async function v21OcrLevel(worker,img){
+  const regions=[
+    {x:.120,y:.890,w:.090,h:.060},
+    {x:.112,y:.882,w:.100,h:.070},
+    {x:.125,y:.895,w:.084,h:.055}
+  ];
+  const attempts=[
+    {mode:"original",threshold:170,scale:8,psm:"13"},
+    {mode:"original",threshold:170,scale:10,psm:"7"},
+    {mode:"bright",threshold:185,scale:10,psm:"13"}
+  ];
+  const map=new Map(),raws=[];
+
+  function parseLevelCandidate(ds){
+    if(!ds)return null;
+
+    // HUD layout is "Lv.288". Tesseract frequently misreads "Lv." as a
+    // leading 1, yielding "1288". Therefore use the LONGEST valid suffix and
+    // never let 1-/2-digit fragments from the same OCR pass outvote it.
+    for
