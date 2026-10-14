@@ -1,0 +1,154 @@
+bleTotal,top:arr.slice(0,30)});
+  return {candidates:arr,raws,targetLen};
+}
+
+function v21CurrentTargetLengths(tableTotal,pcts){
+  const set=new Set();
+  for(const p of pcts.slice(0,25)){
+    const approx=tableTotal*p.value/100;
+    if(approx>0){
+      const len=String(Math.max(1,Math.round(approx))).length;
+      for(const d of [-1,0,1]){
+        const x=len+d;
+        if(x>=1&&x<=String(Math.trunc(tableTotal)).length)set.add(x);
+      }
+    }
+  }
+  if(!set.size){
+    const totalLen=String(Math.trunc(tableTotal)).length;
+    for(let x=Math.max(1,totalLen-6);x<=totalLen;x++)set.add(x);
+  }
+  return [...set].sort((a,b)=>a-b);
+}
+
+async function v21CollectCurrent(worker,img,tableTotal,pcts){
+  const targetLens=v21CurrentTargetLengths(tableTotal,pcts);
+  const regions=[
+    {x:.405,y:.951,w:.128,h:.033},
+    {x:.412,y:.953,w:.112,h:.030},
+    {x:.417,y:.955,w:.104,h:.027}
+  ];
+  const attempts=[
+    {mode:"original",threshold:170,scale:8,psm:"13"},
+    {mode:"darkSmooth",threshold:190,scale:8,psm:"13"},
+    {mode:"darkSmooth",threshold:200,scale:8,psm:"7"},
+    {mode:"dark",threshold:200,scale:12,psm:"13"}
+  ];
+  const map=new Map(),raws=[];
+  for(const region of regions){
+    for(const a of attempts){
+      const canvas=v22MakeOcrCanvas(img,region,a.scale,a.mode,a.threshold);
+      const text=await recognizeCanvas(worker,canvas,"0123456789,()/",""+a.psm);
+      raws.push(text);
+
+      let part=String(text||"");
+      if(part.includes("("))part=part.split("(").slice(1).join("(");
+      if(part.includes("/"))part=part.split("/")[0];
+      const ds=v21Digits(part);
+      const local=[];
+
+      for(const len of targetLens){
+        for(const d of v21GroupedDecode(ds,len)){
+          const value=Number(d.token);
+          if(!Number.isFinite(value)||value<0||value>tableTotal*1.5)continue;
+          v21AddCandidate(map,value,d.cost,text,{region,...a,kind:"grouped",len,detail:d.detail});
+          local.push(value);
+        }
+
+        // 그룹 복원보다 낮은 우선순위의 일반 subsequence.
+        for(const token of v21DeletionSubseq(ds,len,5)){
+          const value=Number(token);
+          if(Number.isFinite(value)&&value>=0&&value<=tableTotal*1.5){
+            v21AddCandidate(map,value,1.25,text,{region,...a,kind:"subseq",len});
+            local.push(value);
+          }
+        }
+      }
+      pushOcrDebug("v21-current-attempt",{region,...a,raw:safeOcrText(text),targetLens,candidates:[...new Set(local)].slice(0,80)});
+    }
+  }
+  const arr=v21FinalizeCandidates(map,raws,{groupWeight:.055,supportWeight:.19}).slice(0,160);
+  pushOcrDebug("v21-current-candidates",{targetLens,top:arr.slice(0,40)});
+  return {candidates:arr,raws,targetLens};
+}
+
+function v21FuseHud(level,tableTotal,pctPack,totalPack,currentPack){
+  const pcts=pctPack.candidates.slice(0,30);
+  const totals=totalPack.candidates.slice(0,60);
+  const currents=currentPack.candidates.slice(0,120);
+  const combos=[];
+
+  for(const p of pcts){
+    for(const t of totals){
+      if(!(t.value>0))continue;
+      const tableRel=Math.abs(t.value-tableTotal)/Math.max(1,tableTotal);
+      for(const c of currents){
+        if(c.value<0||c.value>=t.value)continue;
+        const calc=Math.round((c.value/t.value*100)*100)/100;
+        const err=Math.abs(calc-p.value);
+        if(err>.08)continue;
+
+        // 수학 관계가 가장 강한 신호. OCR 증거 점수와 기존 표 차이는 보조 신호.
+        const score=
+          err*700+
+          p.score*.75+
+          t.score+
+          c.score+
+          tableRel*.8;
+
+        combos.push({
+          score,
+          level,
+          percent:p.value,
+          current:c.value,
+          total:t.value,
+          calculatedPercent:calc,
+          percentErr:err,
+          pSupport:p.support,
+          tSupport:t.support,
+          cSupport:c.support,
+          pGroupHits:p.groupHits||0,
+          tGroupHits:t.groupHits||0,
+          cGroupHits:c.groupHits||0,
+          pRaw:p.raws?.[0]||"",
+          tRaw:t.raws?.[0]||"",
+          cRaw:c.raws?.[0]||""
+        });
+      }
+    }
+  }
+
+  // 같은 숫자 조합 중복 제거.
+  const bestByKey=new Map();
+  for(const x of combos){
+    const key=`${x.percent}|${x.current}|${x.total}`;
+    if(!bestByKey.has(key)||bestByKey.get(key).score>x.score)bestByKey.set(key,x);
+  }
+  const sorted=[...bestByKey.values()].sort((a,b)=>a.score-b.score);
+  const best=sorted[0]||null;
+  const second=sorted.find(x=>!best || x.current!==best.current || x.total!==best.total || x.percent!==best.percent)||null;
+
+  let confidence="low";
+  if(best){
+    const gap=second?second.score-best.score:99;
+    if(best.percentErr<=.001 && gap>=.30)confidence="high";
+    else if(best.percentErr<=.011 && gap>=.12)confidence="medium";
+  }
+  pushOcrDebug("v21-fusion",{
+    confidence,
+    selected:best,
+    second,
+    top:sorted.slice(0,25)
+  });
+  return {best,second,confidence,top:sorted.slice(0,25)};
+}
+
+async function v21RunStructuredHud(worker,img,tableTotal,lv){
+  const pctPack=await v21CollectPercent(worker,img);
+  const totalPack=await v21CollectTotal(worker,img,tableTotal);
+  const currentPack=await v21CollectCurrent(worker,img,tableTotal,pctPack.candidates);
+  return v21FuseHud(lv,tableTotal,pctPack,totalPack,currentPack);
+}
+
+async function v22RunHudOcr(side){
+  const img=$("preview"+side)
