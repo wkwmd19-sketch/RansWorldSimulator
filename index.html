@@ -10,16 +10,16 @@ body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b102
 </style>
 </head>
 <body>
-<div class="loading"><b>RansWorldSimulator</b><span>v10.9 페이지를 불러오는 중...</span></div>
+<div class="loading"><b>RansWorldSimulator</b><span>v10.10 페이지를 불러오는 중...</span></div>
 <script>
 (async()=>{
   try{
-    const r=await fetch('./app-base.html?v=10.9',{cache:'no-cache'});
+    const r=await fetch('./app-base.html?v=10.10',{cache:'no-cache'});
     if(!r.ok)throw new Error(`app-base.html: ${r.status}`);
     let h=await r.text();
 
     const patch=(from,to,label)=>{
-      if(!h.includes(from))throw new Error(`v10.9 패치 실패: ${label}`);
+      if(!h.includes(from))throw new Error(`v10.10 패치 실패: ${label}`);
       h=h.replace(from,to);
     };
 
@@ -109,7 +109,7 @@ $("rbExp").addEventListener("blur",()=>formatExpInput($("rbExp"),$("rbExpMode").
     patch('</style>','#rbRate::placeholder{font-size:12px;letter-spacing:-.02em}\n</style>','rebirth rate placeholder size');
     patch('const now=new Date();$("timeA").value=formatInputDate(now);$("timeB").value=formatInputDate(now);$("rbNow").value=formatInputDate(now);','const now=new Date();$("rbNow").value=formatInputDate(now);','EXP date defaults blank');
 
-    patch('<div class="version">v10.4</div>','<div class="version">v10.9</div>','version');
+    patch('<div class="version">v10.4</div>','<div class="version">v10.10</div>','version');
 
     patch('const pricing=DATA.pricing;',`const pricing=DATA.pricing;
 (()=>{
@@ -197,69 +197,20 @@ function toggleShopView(){
   applyShopView();
 }
 function buildShopSave(){
-  return{
-    format:"RansWorldSimulator",
-    saveVersion:1,
-    appVersion:"v10.9",
-    savedAt:new Date().toISOString(),
-    owned:String($("owned").value??0),
-    viewMode:shopViewMode,
-    products:products.map(p=>({id:p.id,ticks:p.ticks,locked:!!p.locked}))
-  };
+  return{format:"RansWorldSimulator",saveVersion:1,appVersion:"v10.9",savedAt:new Date().toISOString(),owned:String($("owned").value??0),viewMode:shopViewMode,products:products.map(p=>({id:p.id,ticks:p.ticks,locked:!!p.locked}))};
 }
 function applyShopSave(d){
   if(!d||typeof d!=="object")throw new Error("저장 데이터 형식이 올바르지 않습니다.");
   $("owned").value=d.owned??0;
   const state=Array.isArray(d.products)?d.products:Array.isArray(d.state)?d.state:[];
-  if(state.length){
-    const byId=new Map(state.filter(x=>x&&x.id).map(x=>[x.id,x]));
-    products.forEach((p,i)=>{
-      const s=byId.get(p.id)||(!byId.size?state[i]:null);
-      if(!s)return;
-      p.ticks=clamp(Number(s.ticks)||0,0,p.maxTicks);
-      p.locked=!!s.locked;
-    });
-  }
-  if(d.viewMode==="compact"||d.viewMode==="detail"){
-    shopViewMode=d.viewMode;
-    localStorage.setItem("RansWorldSimulator-shop-view",shopViewMode);
-  }
-  renderShop();
-  applyShopView();
+  if(state.length){const byId=new Map(state.filter(x=>x&&x.id).map(x=>[x.id,x]));products.forEach((p,i)=>{const s=byId.get(p.id)||(!byId.size?state[i]:null);if(!s)return;p.ticks=clamp(Number(s.ticks)||0,0,p.maxTicks);p.locked=!!s.locked})}
+  if(d.viewMode==="compact"||d.viewMode==="detail"){shopViewMode=d.viewMode;localStorage.setItem("RansWorldSimulator-shop-view",shopViewMode)}
+  renderShop();applyShopView();
 }
-function saveShop(){
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(buildShopSave()));
-  alert("현재 RP 상점 설정을 이 브라우저에 저장했습니다.");
-}
-function loadShop(){
-  const raw=localStorage.getItem(STORAGE_KEY);
-  if(!raw){alert("이 브라우저에 저장된 RP 상점 설정이 없습니다.");return}
-  try{applyShopSave(JSON.parse(raw))}
-  catch(e){console.error(e);alert("브라우저 저장 데이터를 불러오지 못했습니다.")}
-}
-function exportShopJson(){
-  const data=JSON.stringify(buildShopSave(),null,2);
-  const blob=new Blob([data],{type:"application/json;charset=utf-8"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  const stamp=new Date(),pad2=n=>String(n).padStart(2,"0");
-  a.href=url;
-  a.download="RansWorldSimulator_RP_"+stamp.getFullYear()+pad2(stamp.getMonth()+1)+pad2(stamp.getDate())+"_"+pad2(stamp.getHours())+pad2(stamp.getMinutes())+".json";
-  document.body.appendChild(a);a.click();a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-}
-async function importShopJsonFile(file){
-  if(!file)return;
-  try{
-    const text=await file.text(),d=JSON.parse(text);
-    if(d.format&&d.format!=="RansWorldSimulator")throw new Error("RansWorldSimulator 저장 파일이 아닙니다.");
-    applyShopSave(d);
-    alert("JSON 저장 파일을 불러왔습니다.");
-  }catch(e){
-    console.error(e);
-    alert(e?.message||"JSON 저장 파일을 불러오지 못했습니다.");
-  }finally{$("importFile").value=""}
-}`,'shop save/load v10.9');
+function saveShop(){localStorage.setItem(STORAGE_KEY,JSON.stringify(buildShopSave()));alert("현재 RP 상점 설정을 이 브라우저에 저장했습니다.")}
+function loadShop(){const raw=localStorage.getItem(STORAGE_KEY);if(!raw){alert("이 브라우저에 저장된 RP 상점 설정이 없습니다.");return}try{applyShopSave(JSON.parse(raw))}catch(e){console.error(e);alert("브라우저 저장 데이터를 불러오지 못했습니다.")}}
+function exportShopJson(){const data=JSON.stringify(buildShopSave(),null,2),blob=new Blob([data],{type:"application/json;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a"),stamp=new Date(),pad2=n=>String(n).padStart(2,"0");a.href=url;a.download="RansWorldSimulator_RP_"+stamp.getFullYear()+pad2(stamp.getMonth()+1)+pad2(stamp.getDate())+"_"+pad2(stamp.getHours())+pad2(stamp.getMinutes())+".json";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+async function importShopJsonFile(file){if(!file)return;try{const text=await file.text(),d=JSON.parse(text);if(d.format&&d.format!=="RansWorldSimulator")throw new Error("RansWorldSimulator 저장 파일이 아닙니다.");applyShopSave(d);alert("JSON 저장 파일을 불러왔습니다.")}catch(e){console.error(e);alert(e?.message||"JSON 저장 파일을 불러오지 못했습니다.")}finally{$("importFile").value=""}}`,'shop save/load v10.9');
 
     patch(`  }).join("");
   calcShop();
@@ -276,6 +227,16 @@ $("exportBtn").onclick=exportShopJson;
 $("importBtn").onclick=()=>$("importFile").click();
 $("importFile").addEventListener("change",e=>importShopJsonFile(e.target.files?.[0]));
 $("resetBtn").onclick=resetShop;`,'shop handlers v10.9');
+
+    patch('다음 09:00 갱신 이후의 3회도 반영','환생 예상일까지 매일 09:00 갱신분 반영','PQ recurring label');
+    patch('후보 Lv 도달이 다음 보상 주기를 넘길 때 아래 설정을 매일 3회 적용합니다.','다음 09:00부터 각 후보 Lv의 예상 도달 시각까지 아래 설정을 매 보상 주기마다 3회 반복 적용합니다.','PQ recurring help');
+    patch('갱신 후 기본 파티퀘스트','매일 반복 파티퀘스트','PQ recurring quest label');
+    patch('$("pqSummary").textContent=configured?"사용":"미사용";','$("pqSummary").textContent=configured?(future?"사용 · 매일 반복":"사용"):"미사용";','PQ status');
+    patch(' · 09:00 갱신 이후 일일 3회도 반영',' · 이후 예상 도달일까지 매일 3회 반복','PQ precision text');
+    patch('const pq=x.pqRuns?` · 파퀘 ${x.pqRuns}회`:"";','const pq=x.pqRuns?` · 파퀘 ${x.pqRuns}회 (${partyQuestRewardText(x.pqExp)})`:"";','PQ result total');
+    patch('const pqText=tc.pqRuns?` · 파퀘 ${tc.pqRuns}회 포함`:"";','const pqText=tc.pqRuns?` · 파퀘 ${tc.pqRuns}회 (${partyQuestRewardText(tc.pqExp)}) 포함`:"";','PQ target total');
+    patch('계산상 파티퀘스트 3판은 <b>1시간(1판 20분)</b>으로 고정합니다.\n                      실제 클리어 시간은 파티 구성과 진행 상황에 따라 달라질 수 있습니다.','계산상 파티퀘스트 3판은 <b>1시간(1판 20분)</b>으로 고정합니다.\n                      매일 반복 옵션을 켜면 예상 환생 시각까지 09:00 갱신분을 자동으로 계속 반영합니다.\n                      실제 클리어 시간은 파티 구성과 진행 상황에 따라 달라질 수 있습니다.','PQ recurring note');
+    patch('「다음 09:00 갱신 이후의 3회도 반영」을 켜면 후보 Lv 도달시간이 다음 보상 주기를 넘는 경우,\n        지정한 파티퀘스트/난이도로 새 보상 3회를 매일 사용할 수 있다고 가정합니다.','「환생 예상일까지 매일 09:00 갱신분 반영」을 켜면 각 후보 Lv의 예상 도달 시각까지\n        09:00마다 보상 횟수가 갱신된 것으로 보고, 지정한 파티퀘스트/난이도를 매 보상 주기마다 최대 3회 반복 적용합니다.\n        후보 Lv마다 예상 도달 시각이 다르므로 실제 반영되는 파티퀘스트 횟수도 후보별로 자동 계산됩니다.','PQ formula help');
 
     document.open();
     document.write(h);
