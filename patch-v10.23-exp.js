@@ -67,13 +67,9 @@
   let dataApplied=applyExpData();
   const timer=setInterval(()=>{
     if(!dataApplied)dataApplied=applyExpData();
-    const version=document.querySelector('.version');
-    if(version && document.getElementById('ocrLogA')){
-      version.textContent='v10.23';
-      if(dataApplied)clearInterval(timer);
-    }
+    if(dataApplied)clearInterval(timer);
   },80);
   setTimeout(()=>clearInterval(timer),10000);
 
-  console.info('RansWorldSimulator v10.23: Lv.300~350 EXP data patch loaded');
+  console.info('RansWorldSimulator EXP data patch: Lv.300~350 loaded');
 })();
