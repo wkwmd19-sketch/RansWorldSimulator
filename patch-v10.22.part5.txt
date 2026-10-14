@@ -1,0 +1,100 @@
+,file=shotFiles[side];
+  if(!file||!img?.src)return;
+  ocrStatus(side,"Lv / EXP 문자인식 중...","working");
+  ocrRetryVisible(side,false);
+  beginOcrDebug(side,img,file);
+
+  try{
+    if(!img.complete)await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject});
+    pushOcrDebug("image-ready",{width:img.naturalWidth,height:img.naturalHeight,ratio:img.naturalWidth/img.naturalHeight});
+    if(!img.naturalWidth)throw new Error("이미지를 읽을 수 없습니다.");
+
+    const ratio=img.naturalWidth/img.naturalHeight;
+    if(ratio<1.45||ratio>2.05){
+      throw new Error("전체 게임 화면에 가까운 스크린샷을 사용해 주세요.");
+    }
+
+    const worker=await getOcrWorker();
+
+    // v10.21: Lv는 숫자 부분만 좁게 읽고 오른쪽 suffix를 우선한다.
+    const levelResult=await v21OcrLevel(worker,img);
+    if(!levelResult)throw new Error("Lv을 인식하지 못했습니다.");
+    const lv=levelResult.lv;
+    pushOcrDebug("level-final",{lv,raw:safeOcrText(levelResult.raw),score:levelResult.score,engine:"v10.21"});
+
+    const tableTotal=Number(LEVEL_EXP[lv]||0);
+    pushOcrDebug("level-total-exp",{lv,total:tableTotal,note:"v10.21에서는 자릿수/대략 범위 참고용으로만 사용"});
+    if(!tableTotal)throw new Error(`Lv.${lv} 필요 EXP 데이터가 없습니다.`);
+
+    // % / 현재EXP / 총EXP를 따로 확정하지 않고 후보를 만든 뒤 마지막에 교차검증.
+    const fused=await v21RunStructuredHud(worker,img,tableTotal,lv);
+    if(!fused.best)throw new Error(`EXP 후보 교차검증 실패 · Lv.${lv} · OCR 로그를 저장해 주세요.`);
+
+    const best=fused.best;
+    const current=Math.round(best.current);
+    if(!Number.isFinite(current)||current<0)throw new Error("인식된 EXP 값이 올바르지 않습니다.");
+
+    $("level"+side).value=lv;
+    $("expInputMode").value="raw";
+    updateExpMode();
+    setExpInputValue("exp"+side,current,"raw");
+
+    const confidenceText=
+      fused.confidence==="high"?"검증 완료":
+      fused.confidence==="medium"?"교차검증":
+      "검증 필요";
+
+    ocrStatus(
+      side,
+      `인식 완료 · Lv.${lv} / EXP ${fmt(current)} · ${confidenceText}`,
+      fused.confidence==="low"?"working":"success"
+    );
+    ocrRetryVisible(side,true);
+
+    finishOcrDebug(side,{
+      ok:true,
+      engine:"v10.21-structured-fusion",
+      level:lv,
+      current,
+      displayedPercent:best.percent,
+      calculatedPercent:best.calculatedPercent,
+      liveTotalExp:best.total,
+      tableTotalExp:tableTotal,
+      confidence:fused.confidence,
+      second:fused.second||null
+    });
+    lastMeasurement=null;
+  }catch(err){
+    console.error(err);
+    pushOcrDebug("error",{name:err?.name||"",message:err?.message||String(err)});
+    ocrStatus(side,err?.message||"문자인식에 실패했습니다. 직접 입력해 주세요.","error");
+    ocrRetryVisible(side,true);
+    finishOcrDebug(side,{ok:false,engine:"v10.21-structured-fusion",error:err?.message||String(err)});
+  }
+}
+
+    try{ window.runHudOcr=v22RunHudOcr; runHudOcr=v22RunHudOcr; }catch(e){ window.runHudOcr=v22RunHudOcr; }
+
+    function addLogButton(side){
+      const retry=document.getElementById('ocrRetry'+side);
+      if(!retry||document.getElementById('ocrLog'+side))return;
+      const btn=document.createElement('button');
+      btn.id='ocrLog'+side;
+      btn.className='ocr-log-btn';
+      btn.type='button';
+      btn.disabled=true;
+      btn.textContent='OCR 로그 저장';
+      retry.insertAdjacentElement('afterend',btn);
+      btn.onclick=()=>exportOcrDebug(side);
+    }
+    addLogButton('A'); addLogButton('B');
+
+    ['A','B'].forEach(side=>{
+      const trash=document.getElementById('trash'+side);
+      trash?.addEventListener('click',()=>{
+        ocrDebugLogs[side]=null;
+        const b=document.getElementById('ocrLog'+side); if(b)b.disabled=true;
+      });
+    });
+  },60);
+})();
