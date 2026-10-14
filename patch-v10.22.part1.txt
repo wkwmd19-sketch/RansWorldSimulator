@@ -1,0 +1,139 @@
+(()=>{
+  const wait=setInterval(()=>{
+    if(!document.querySelector('.version') || typeof window.loadShotFile!=="function" || typeof window.queueHudOcr!=="function")return;
+    clearInterval(wait);
+    document.querySelector('.version').textContent='v10.22';
+
+    const style=document.createElement('style');
+    style.textContent=`.ocr-log-btn{border:1px solid #4a668b;border-radius:8px;background:#101c30;color:#9fb9db;padding:7px 10px;font-size:10px;font-weight:800;white-space:nowrap}.ocr-log-btn:not(:disabled){cursor:pointer;color:#d7eaff;background:#152943;border-color:#5681b7}.ocr-log-btn:not(:disabled):hover{background:#1b3659}.ocr-log-btn:disabled{opacity:.42}`;
+    document.head.appendChild(style);
+
+    const OCR_DEBUG_VERSION="v10.22 OCR FUSION";
+    const ocrDebugLogs={A:null,B:null};
+    let activeOcrDebugSide=null;
+
+function v22MakeOcrCanvas(img,region,scale=6,mode="original",threshold=175){
+  const sx=Math.max(0,Math.floor(img.naturalWidth*region.x));
+  const sy=Math.max(0,Math.floor(img.naturalHeight*region.y));
+  const sw=Math.min(img.naturalWidth-sx,Math.max(1,Math.floor(img.naturalWidth*region.w)));
+  const sh=Math.min(img.naturalHeight-sy,Math.max(1,Math.floor(img.naturalHeight*region.h)));
+
+  const src=document.createElement("canvas");
+  src.width=sw;src.height=sh;
+  const sctx=src.getContext("2d",{willReadFrequently:true});
+  sctx.drawImage(img,sx,sy,sw,sh,0,0,sw,sh);
+
+  if(mode!=="original"){
+    const image=sctx.getImageData(0,0,sw,sh),d=image.data;
+    for(let i=0;i<d.length;i+=4){
+      const r=d[i],g=d[i+1],b=d[i+2];
+      let on=false;
+      if(mode==="bright"){
+        const gray=.299*r+.587*g+.114*b;
+        on=gray>=threshold;
+      }else if(mode==="hud"){
+        // White/light HUD text. Avoid most red/orange lava background.
+        const gray=.299*r+.587*g+.114*b;
+        on=gray>=threshold && (g>110 || b>110);
+      }else if(mode==="white"){
+        on=r>150 && g>150 && b>130;
+      }else if(mode==="dark"||mode==="darkSmooth"){
+        const gray=.299*r+.587*g+.114*b;
+        on=gray<=threshold;
+      }else if(mode==="brightText"){
+        // Bottom HUD EXP text is light gray/white on a mid-gray/green bar.
+        const gray=.299*r+.587*g+.114*b;
+        on=gray>=threshold;
+      }
+      const blackOnWhite=mode==="dark"||mode==="brightText";
+      const v=on?(blackOnWhite?0:255):(blackOnWhite?255:0);
+      d[i]=d[i+1]=d[i+2]=v;d[i+3]=255;
+    }
+    sctx.putImageData(image,0,0);
+  }
+
+  const out=document.createElement("canvas");
+  out.width=src.width*scale;out.height=src.height*scale;
+  const octx=out.getContext("2d");
+  // The HUD font is pixel-sized. Nearest-neighbour scaling keeps digit shapes
+  // sharper than high-quality interpolation.
+  octx.imageSmoothingEnabled=(mode==="original"||mode==="darkSmooth");
+  if(mode==="original"||mode==="darkSmooth")octx.imageSmoothingQuality="high";
+  octx.drawImage(src,0,0,out.width,out.height);
+  return out;
+}
+function beginOcrDebug(side,img,file){
+  const log={
+    version:OCR_DEBUG_VERSION,
+    side,
+    startedAt:new Date().toISOString(),
+    file:{
+      name:file?.name||"",
+      type:file?.type||"",
+      size:file?.size||0,
+      lastModified:file?.lastModified||0
+    },
+    image:{
+      width:img?.naturalWidth||0,
+      height:img?.naturalHeight||0,
+      ratio:img?.naturalWidth&&img?.naturalHeight?img.naturalWidth/img.naturalHeight:null
+    },
+    events:[]
+  };
+  ocrDebugLogs[side]=log;
+  activeOcrDebugSide=side;
+  const btn=$("ocrLog"+side);
+  if(btn)btn.disabled=true;
+  return log;
+}
+
+function pushOcrDebug(type,data={}){
+  const side=activeOcrDebugSide;
+  const log=side?ocrDebugLogs[side]:null;
+  if(!log)return;
+  log.events.push({t:Date.now(),type,...data});
+}
+
+function finishOcrDebug(side,result={}){
+  const log=ocrDebugLogs[side];
+  if(!log)return;
+  log.finishedAt=new Date().toISOString();
+  log.result=result;
+  const btn=$("ocrLog"+side);
+  if(btn)btn.disabled=false;
+  activeOcrDebugSide=null;
+}
+
+function safeOcrText(s){
+  return String(s??"").replace(/\r/g,"\\r").replace(/\n/g,"\\n");
+}
+
+function exportOcrDebug(side){
+  const log=ocrDebugLogs[side];
+  if(!log){alert("저장할 OCR 로그가 없습니다.");return}
+  const lines=[];
+  lines.push("RansWorldSimulator OCR DEBUG LOG");
+  lines.push(`version=${log.version}`);
+  lines.push(`side=${side}`);
+  lines.push(`startedAt=${log.startedAt}`);
+  lines.push(`finishedAt=${log.finishedAt||""}`);
+  lines.push(`file.name=${log.file.name}`);
+  lines.push(`file.type=${log.file.type}`);
+  lines.push(`file.size=${log.file.size}`);
+  lines.push(`image=${log.image.width}x${log.image.height}`);
+  lines.push(`ratio=${log.image.ratio}`);
+  lines.push("");
+  lines.push("=== OCR EVENTS ===");
+  log.events.forEach((e,i)=>{
+    const copy={...e};
+    delete copy.t;
+    lines.push(`[${String(i+1).padStart(3,"0")}] ${e.type}`);
+    Object.entries(copy).forEach(([k,v])=>{
+      const value=typeof v==="object"?JSON.stringify(v):String(v);
+      lines.push(`  ${k}=${value}`);
+    });
+  });
+  lines.push("");
+  lines.push("=== FINAL ===");
+  Object.entries(log.result||{}).forEach(([k,v])=>lines.push(`${k}=${typeof v==="object"?JSON.stringify(v):v}`));
+  lines.push(`visible.level=${$("level"+side)?.value||""}`
