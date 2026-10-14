@@ -1,0 +1,146 @@
+(const len of [3,2,1]){
+      if(ds.length<len)continue;
+      const token=ds.slice(-len);
+      const value=Number(token);
+      if(!(value>=1&&value<=350))continue;
+
+      let cost=0;
+      let kind="suffix";
+      if(ds.length===len){
+        cost=-1.10;               // exact raw digits
+        kind="exact";
+      }else if(ds.length===len+1 && ds[0]==="1"){
+        cost=-1.00;               // common "Lv." -> leading 1 artifact
+        kind="leading-lv-artifact";
+      }else{
+        cost=-.55 + (ds.length-len)*.10;
+      }
+      return {value,cost,kind,token};
+    }
+    return null;
+  }
+
+  for(const region of regions){
+    for(const a of attempts){
+      const canvas=v22MakeOcrCanvas(img,region,a.scale,a.mode,a.threshold);
+      const text=await recognizeCanvas(worker,canvas,"0123456789",a.psm);
+      raws.push(text);
+      const ds=v21Digits(text);
+      const parsed=parseLevelCandidate(ds);
+      const candidates=[];
+
+      if(parsed){
+        v21AddCandidate(map,parsed.value,parsed.cost,text,{
+          region,...a,kind:parsed.kind,token:parsed.token,rawDigits:ds
+        });
+        candidates.push(parsed.value);
+      }
+
+      pushOcrDebug("v22-level-attempt",{
+        region,...a,raw:safeOcrText(text),rawDigits:ds,
+        selectedFromAttempt:parsed||null,candidates
+      });
+    }
+  }
+
+  // One OCR pass = one vote. This prevents short fragments such as "8" from
+  // receiving 2~3 votes from a single "1288" recognition.
+  const arr=v21FinalizeCandidates(map,raws,{groupWeight:0,supportWeight:.38});
+
+  // Prefer 3-digit levels when multiple OCR passes explicitly agree on them.
+  arr.forEach(c=>{
+    const digits=String(c.value).length;
+    if(digits===3 && c.support>=2)c.score-=1.0;
+    if(digits===2 && c.support>=2)c.score-=.15;
+  });
+  arr.sort((a,b)=>a.score-b.score);
+
+  const selected=arr[0]||null;
+  pushOcrDebug("v22-level-selected",{selected,top:arr.slice(0,12)});
+  return selected?{
+    lv:selected.value,
+    raw:selected.raws[0]||"",
+    score:selected.score,
+    candidates:arr
+  }:null;
+}
+
+async function v21CollectPercent(worker,img){
+  const regions=[
+    {x:.363,y:.953,w:.055,h:.030},
+    {x:.366,y:.955,w:.052,h:.027},
+    {x:.369,y:.956,w:.048,h:.025}
+  ];
+  const attempts=[
+    {mode:"original",threshold:170,scale:10,psm:"13"},
+    {mode:"original",threshold:170,scale:14,psm:"13"},
+    {mode:"darkSmooth",threshold:190,scale:8,psm:"13"},
+    {mode:"brightText",threshold:220,scale:14,psm:"13"}
+  ];
+  const map=new Map(),raws=[];
+  for(const region of regions){
+    for(const a of attempts){
+      const canvas=v22MakeOcrCanvas(img,region,a.scale,a.mode,a.threshold);
+      const text=await recognizeCanvas(worker,canvas,"0123456789.%",a.psm);
+      raws.push(text);
+      const pcs=v21PercentFromRaw(text);
+      for(const p of pcs)v21AddCandidate(map,p.value,p.cost,text,{region,...a,kind:p.kind});
+      pushOcrDebug("v21-percent-attempt",{region,...a,raw:safeOcrText(text),candidates:pcs.slice(0,40)});
+    }
+  }
+  const arr=v21FinalizeCandidates(map,raws,{groupWeight:0,supportWeight:.20}).slice(0,40);
+  pushOcrDebug("v21-percent-candidates",{top:arr.slice(0,25)});
+  return {candidates:arr,raws};
+}
+
+async function v21CollectTotal(worker,img,tableTotal){
+  const targetLen=String(Math.trunc(tableTotal)).length;
+  const regions=[
+    {x:.515,y:.951,w:.150,h:.033},
+    {x:.505,y:.949,w:.162,h:.036},
+    {x:.522,y:.953,w:.140,h:.030}
+  ];
+  const attempts=[
+    {mode:"original",threshold:170,scale:8,psm:"13"},
+    {mode:"darkSmooth",threshold:190,scale:8,psm:"7"},
+    {mode:"darkSmooth",threshold:200,scale:8,psm:"13"},
+    {mode:"dark",threshold:200,scale:12,psm:"13"}
+  ];
+  const map=new Map(),raws=[];
+  for(const region of regions){
+    for(const a of attempts){
+      const canvas=v22MakeOcrCanvas(img,region,a.scale,a.mode,a.threshold);
+      const text=await recognizeCanvas(worker,canvas,"0123456789,()/",""+a.psm);
+      raws.push(text);
+
+      let part=String(text||"");
+      if(part.includes("/"))part=part.split("/").slice(1).join("/");
+      const ds=v21Digits(part);
+      const local=[];
+
+      for(const d of v21GroupedDecode(ds,targetLen)){
+        const value=Number(d.token);
+        if(!Number.isFinite(value)||value<=0)continue;
+        const rel=Math.abs(value-tableTotal)/Math.max(1,tableTotal);
+        // 내장 표는 수% 차이가 있을 수 있으므로 35%까지 허용.
+        if(rel<=.35){
+          const cost=d.cost+rel*.35;
+          v21AddCandidate(map,value,cost,text,{region,...a,kind:"grouped",detail:d.detail});
+          local.push(value);
+        }
+      }
+
+      // 그룹 복원이 실패하는 예외를 위한 일반 삭제 후보.
+      for(const token of v21DeletionSubseq(ds,targetLen,4)){
+        const value=Number(token);
+        const rel=Math.abs(value-tableTotal)/Math.max(1,tableTotal);
+        if(Number.isFinite(value)&&value>0&&rel<=.35){
+          v21AddCandidate(map,value,1.1+rel*.5,text,{region,...a,kind:"subseq"});
+          local.push(value);
+        }
+      }
+      pushOcrDebug("v21-total-attempt",{region,...a,raw:safeOcrText(text),candidates:[...new Set(local)].slice(0,60)});
+    }
+  }
+  const arr=v21FinalizeCandidates(map,raws,{groupWeight:.055,supportWeight:.20}).slice(0,100);
+  pushOcrDebug("v21-total-candidates",{targetLen,ta
