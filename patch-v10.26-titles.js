@@ -19,7 +19,19 @@
     ['title_eternal','[이터널] 컬렉션 칭호 효과 증폭']
   ];
   let sprite='';
-  function setVersion(){const el=document.querySelector('.version');if(el)el.textContent=VERSION}
+  function setVersion(){
+    const el=document.querySelector('.version');
+    if(!el)return;
+    const tuple=s=>{const m=String(s||'').trim().match(/^v(\d+)\.(\d+)(?:\.(\d+))?$/);return m?[Number(m[1]),Number(m[2]),Number(m[3]||0)]:null};
+    const current=tuple(el.textContent),ours=tuple(VERSION);
+    if(current&&ours){
+      for(let i=0;i<3;i++){
+        if(current[i]>ours[i])return;
+        if(current[i]<ours[i])break;
+      }
+    }
+    el.textContent=VERSION;
+  }
   async function loadSprite(){
     try{
       const parts=await Promise.all(Array.from({length:7},async(_,i)=>{
