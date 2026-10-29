@@ -226,5 +226,12 @@
     installUI();
     console.info("[RansWorldSimulator v10.27] Data, party quest, recommendation UI, version history applied.");
   },60);
-  let n=0;const finalizer=setInterval(()=>{const b=document.querySelector(".version");if(b)b.textContent=V;if(++n>=220)clearInterval(finalizer);},120);
+  let n=0;const finalizer=setInterval(()=>{
+    const el=document.querySelector(".version");
+    const match=String(el?.textContent||"").match(/^v(\d+)\.(\d+)(?:\.(\d+))?$/);
+    const now=match?[Number(match[1]),Number(match[2]),Number(match[3]||0)]:null;
+    const older=!now||now[0]<10||(now[0]===10&&(now[1]<27||(now[1]===27&&now[2]===0)));
+    if(el&&older)el.textContent=V;
+    if(++n>=220)clearInterval(finalizer);
+  },120);
 })();
