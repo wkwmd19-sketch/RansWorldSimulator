@@ -1,6 +1,6 @@
 {
-  "version": "10.30",
+  "version": "10.31",
   "released": "2026-10-29",
-  "name": "RWS v10.30 - RP bonus table and close button polish",
-  "notes": "환생코인 보너스 직접 입력, MAX 전용/비MAX 비교 열 자동 전환, 전체 닫기(X) 버튼 중앙정렬"
+  "name": "RWS v10.31 - 몬스터 레벨표 검색",
+  "notes": "경험치 효율 계산 탭의 몬스터 레벨표: 146종(Lv.1~562) 이름·레벨 검색, 구간 필터, 20종 단위 페이지 이동"
 }
