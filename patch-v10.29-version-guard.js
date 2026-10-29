@@ -1,5 +1,5 @@
 (function RWSVersionGuard1029(){
-  const INSTALLED="10.32";
+  const INSTALLED="10.33";
   const PUBLIC_VERSION="v"+INSTALLED;
   const manifestUrl="./release.json";
   const storageKey="rws-latest-version-dismissed";
