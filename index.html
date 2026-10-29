@@ -17,7 +17,7 @@ body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b102
 <div class="loading"><b>RansWorldSimulator</b><span id="bootStatus">최신 버전 확인 중...</span></div>
 <script>
 (function RWSBootstrap1029(){
-  const BOOT_VERSION="10.30";
+  const BOOT_VERSION="10.31";
   const RELEASE="./release.json";
   const stamp=Date.now().toString()+"-"+Math.random().toString(36).slice(2,8);
   const files=[
@@ -31,7 +31,8 @@ body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b102
     "patch-v10.27.js",
     "patch-v10.28-rp-table.js",
     "patch-v10.29-version-guard.js",
-    "patch-v10.30-ui.js"
+    "patch-v10.30-ui.js",
+    "patch-v10.31-monster-levels.js"
   ];
   const label=document.getElementById("bootStatus");
   const parse=v=>{const match=String(v||"").replace(/^v/i,"").match(/^(\d+)\.(\d+)(?:\.(\d+))?$/);return match?[+match[1],+match[2],+(match[3]||0)]:null;};
