@@ -1,6 +1,6 @@
 {
-  "version": "10.29",
+  "version": "10.30",
   "released": "2026-10-29",
-  "name": "RWS v10.29 - latest-version refresh guard",
-  "notes": "자동 최신 버전 확인, 캐시 우회 로딩, 새로고침 안내"
+  "name": "RWS v10.30 - RP bonus table and close button polish",
+  "notes": "환생코인 보너스 직접 입력, MAX 전용/비MAX 비교 열 자동 전환, 전체 닫기(X) 버튼 중앙정렬"
 }
