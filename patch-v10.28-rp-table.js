@@ -215,7 +215,10 @@
   }
   function updateVersion(){
     const v=document.querySelector(".version");
-    if(v){v.textContent=VERSION;v.title="업데이트 내역";}
+    const match=String(v?.textContent||"").match(/^v(\d+)\.(\d+)(?:\.(\d+))?$/);
+    const current=match?[Number(match[1]),Number(match[2]),Number(match[3]||0)]:null;
+    const newer=!!current&&(current[0]>10||(current[0]===10&&(current[1]>28||(current[1]===28&&current[2]>0))));
+    if(v&&!newer){v.textContent=VERSION;v.title="업데이트 내역";}
     const list=$("changelogModal")?.querySelector(".changelog-body");
     if(list&&!list.querySelector('[data-update-version="v10.28"]')){
       const entry=document.createElement("section");
@@ -226,7 +229,7 @@
       para.textContent="환생 타이밍 추천 탭에 환생코인획득표 추가. Lv.30~350 기본 RP / 현재 설정 RP / MAX (+500%) 비교, 레벨 구간 필터, 개별 레벨 검색, 20개씩 페이지 이동 지원.";
       entry.append(title,para);list.prepend(entry);
       const desc=$("changelogModal").querySelector(".changelog-head p");
-      if(desc)desc.textContent="주요 기능과 변경사항 요약 · v10.28";
+      if(desc&&!newer)desc.textContent="주요 기능과 변경사항 요약 · v10.28";
     }
   }
 
