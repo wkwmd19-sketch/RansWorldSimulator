@@ -1,0 +1,6 @@
+{
+  "version": "10.29",
+  "released": "2026-10-29",
+  "name": "RWS v10.29 - latest-version refresh guard",
+  "notes": "자동 최신 버전 확인, 캐시 우회 로딩, 새로고침 안내"
+}
