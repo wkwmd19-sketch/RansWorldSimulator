@@ -2,102 +2,75 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
+<meta name="color-scheme" content="dark">
 <title>RansWorldSimulator</title>
 <style>
-body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b1020;color:#dce8fa;font-family:system-ui,-apple-system,"Segoe UI","Noto Sans KR",sans-serif}
-.loading{text-align:center;padding:24px;max-width:460px}
-.loading b{display:block;font-size:22px;margin-bottom:8px}
-.loading span{color:#92a3bf;font-size:13px}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b1020;color:#e1ebff;font-family:system-ui,"Noto Sans KR",sans-serif}
+.rws-route{text-align:center;max-width:510px;padding:24px}
+.rws-route h1{margin:0 0 10px;font-size:23px}
+.rws-route p{color:#a5bad6;font-size:13px;line-height:1.7}
+.rws-route a{color:#a6d6ff}
 </style>
 </head>
 <body>
-<div class="loading"><b>RansWorldSimulator</b><span id="bootStatus">최신 버전 확인 중...</span></div>
+<main class="rws-route">
+<h1>RansWorldSimulator</h1>
+<p id="routeStatus" role="status">최신 배포 파일을 확인하는 중...</p>
+<p><a href="./app-v10.34.html">v10.34로 직접 접속하기</a></p>
+</main>
 <script>
-(function RWSBootstrap1029(){
-  const BOOT_VERSION="10.33";
-  const RELEASE="./release.json";
-  const stamp=Date.now().toString()+"-"+Math.random().toString(36).slice(2,8);
-  const files=[
-    "patch-v10.12.js",
-    "egg-image-v10.12.js",
-    "patch-v10.13.js",
-    "patch-v10.22-loader.js",
-    "patch-v10.23-exp.js",
-    "patch-v10.24-rp.js",
-    "patch-v10.26-titles.js",
-    "patch-v10.27.js",
-    "patch-v10.28-rp-table.js",
-    "patch-v10.29-version-guard.js",
-    "patch-v10.30-ui.js",
-    "patch-v10.32-monster-levels.js",
-    "patch-v10.33-ui.js"
-  ];
-  const label=document.getElementById("bootStatus");
-  const parse=v=>{const match=String(v||"").replace(/^v/i,"").match(/^(\d+)\.(\d+)(?:\.(\d+))?$/);return match?[+match[1],+match[2],+(match[3]||0)]:null;};
-  const newer=(a,b)=>{const x=parse(a),y=parse(b);if(!x||!y)return false;for(let i=0;i<3;i++){if(x[i]!==y[i])return x[i]>y[i];}return false;};
-  const makeFreshUrl=latest=>{
-    const url=new URL(window.location.href);
-    url.searchParams.set("rws_retry",latest);
-    url.searchParams.set("rws_cache",Date.now().toString()+"-"+Math.random().toString(36).slice(2,6));
-    return url.href;
+(function RWSStableRouter(){
+  "use strict";
+  // This URL is a stable entry point. Each actual app release has an immutable filename.
+  const FALLBACK={version:"10.34",entry:"app-v10.34.html"};
+  const $=id=>document.getElementById(id);
+  const parse=v=>{const m=String(v||"").replace(/^v/i,"").match(/^(\d+)\.(\d+)(?:\.(\d+))?$/);return m?[+m[1],+m[2],+(m[3]||0)]:null};
+  const compare=(a,b)=>{const x=parse(a),y=parse(b);if(!x||!y)return 0;for(let i=0;i<3;i++)if(x[i]!==y[i])return x[i]-y[i];return 0};
+  const parseManifest=data=>{
+    const version=String(data?.version||"").replace(/^v/i,"");
+    const entry=String(data?.entry||"");
+    if(!parse(version)||!/^app-v\d+\.\d+(?:\.\d+)?\.html$/.test(entry)||entry!=="app-v"+version+".html")return null;
+    return{version,entry};
   };
-  function showOldVersion(latest){
-    document.body.innerHTML=
-      `<div class="loading"><h2 style="margin:0 0 12px">최신 버전이 감지되었습니다.</h2>
-      <p id="staleVersionMessage">기존 페이지가 캐시되어 표시되고 있습니다.</p>
-      <button id="staleVersionReload" type="button" style="border:1px solid #6198d8;border-radius:10px;color:#fff;background:#215d9c;padding:12px 20px;font-weight:800;cursor:pointer">최신 버전으로 새로고침</button>
-      <p style="font-size:12px;color:#a4b7d5;margin-top:14px">최신 배포가 서버에 반영되는 중이면 새로고침 후에도 기존 버전이 일시적으로 보일 수 있습니다.</p></div>`;
-    document.getElementById("staleVersionMessage").textContent=
-      "현재 불러온 페이지는 v"+BOOT_VERSION+"이지만 최신 배포는 v"+latest+"입니다.";
-    document.getElementById("staleVersionReload").addEventListener("click",()=>window.location.replace(makeFreshUrl(latest)));
-  }
-  async function checkLatest(){
-    const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),3500);
+  async function getManifest(path){
+    const ac=new AbortController(),timeout=setTimeout(()=>ac.abort(),3500);
     try{
-      const resp=await fetch(RELEASE+"?check="+stamp,{cache:"no-store",credentials:"same-origin",signal:controller.signal});
+      const url=path+(path.includes("?")?"&":"?")+"fresh="+Date.now()+"-"+Math.random().toString(36).slice(2,7);
+      const resp=await fetch(url,{cache:"no-store",signal:ac.signal});
       if(!resp.ok)return null;
-      const data=await resp.json();
-      return parse(data?.version)?data.version:null;
-    }catch(err){
-      console.debug("[RWS] initial version check unavailable",err?.message||err);
-      return null;
-    }finally{clearTimeout(timer);}
+      return parseManifest(await resp.json());
+    }catch(e){return null}finally{clearTimeout(timeout)}
   }
-  async function boot(){
-    const latest=await checkLatest();
-    if(latest&&newer(latest,BOOT_VERSION)){
-      const params=new URLSearchParams(location.search);
-      if(params.get("rws_retry")!==latest){
-        location.replace(makeFreshUrl(latest));
-      }else{
-        showOldVersion(latest);
-      }
-      return;
-    }
+  async function canServe(file){
+    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),3000);
     try{
-      if(label)label.textContent="v"+BOOT_VERSION+" 페이지를 불러오는 중...";
-      const response=await fetch("./loader-v10.10.html?v="+BOOT_VERSION+"&fresh="+stamp,{cache:"no-store",credentials:"same-origin"});
-      if(!response.ok)throw Error("loader "+response.status);
-      let content=await response.text();
-      if(!content.includes("</body>"))throw Error("HTML 로더 구조를 확인할 수 없습니다.");
-      const scripts=files.map(file=>'<scr'+'ipt src="./'+file+'?v='+BOOT_VERSION+'&fresh='+stamp+'"></scr'+'ipt>').join("");
-      content=content.replace("</body>",scripts+"</body>");
-      document.open();
-      document.write(content);
-      document.close();
-    }catch(err){
-      console.error("[RWS] loading failed",err);
-      document.body.innerHTML=`<div class="loading"><h2>사이트를 불러오지 못했습니다.</h2><p id="siteLoadError"></p>
-        <button id="retrySiteLoad" type="button" style="border:1px solid #6198d8;border-radius:10px;color:#fff;background:#215d9c;padding:12px 20px;cursor:pointer">캐시 없이 다시 불러오기</button></div>`;
-      document.getElementById("siteLoadError").textContent=String(err.message||err);
-      document.getElementById("retrySiteLoad").addEventListener("click",()=>location.replace(makeFreshUrl(BOOT_VERSION)));
-    }
+      const u=new URL("./"+file,location.href);
+      u.searchParams.set("probe",Date.now().toString());
+      const r=await fetch(u.href,{method:"HEAD",cache:"no-store",signal:controller.signal});
+      return r.ok;
+    }catch(e){return false}finally{clearTimeout(timeout)}
   }
-  boot();
+  async function route(){
+    const manifests=await Promise.all([
+      getManifest("./release.json"),
+      getManifest("https://raw.githubusercontent.com/wkwmd19-sketch/RansWorldSimulator/main/release.json")
+    ]);
+    const newest=manifests.filter(Boolean).sort((a,b)=>compare(b.version,a.version))[0];
+    let target=newest&&compare(newest.version,FALLBACK.version)>0?newest:FALLBACK;
+    // Avoid routing to a release manifest before its versioned HTML reaches Pages.
+    if(target.entry!==FALLBACK.entry&&!(await canServe(target.entry)))target=FALLBACK;
+    $("routeStatus").textContent="v"+target.version+" 독립 페이지로 이동 중...";
+    const url=new URL("./"+target.entry,location.href);
+    // No reload loop: a versioned filename is never reused for a new release.
+    location.replace(url.href);
+  }
+  route().catch(err=>{
+    console.error("[RWS Router] Could not resolve release",err);
+    $("routeStatus").textContent="버전 확인에 실패했습니다. 아래 링크에서 v10.34 사이트를 직접 열어주세요.";
+  });
 })();
 </script>
-</body></html>
+</body>
+</html>
