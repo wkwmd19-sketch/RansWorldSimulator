@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta name="color-scheme" content="dark">
+<title>RansWorldSimulator v10.35</title>
+<style>
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b1020;color:#dce8fa;font-family:system-ui,"Noto Sans KR",sans-serif}
+#boot{padding:24px;max-width:500px;text-align:center}
+#boot b{display:block;font-size:23px;margin-bottom:10px}
+#boot p{font-size:13px;color:#a6b9d7;line-height:1.7}
+#boot a{color:#a4d6ff}
+</style>
+</head>
+<body>
+<div id="boot"><b>RansWorldSimulator v10.35</b><p id="bootInfo">RP 상점 SVG 아이콘을 적용해 사이트를 불러오는 중...</p></div>
+<script>
+(function(){
+  "use strict";
+  const VERSION="10.35";
+  const files=[
+    "patch-v10.35-badge.js",
+    "patch-v10.12.js",
+    "egg-image-v10.12.js",
+    "patch-v10.13.js",
+    "patch-v10.22-loader.js",
+    "patch-v10.23-exp.js",
+    "patch-v10.24-rp.js",
+    "patch-v10.26-titles.js",
+    "patch-v10.27.js",
+    "patch-v10.28-rp-table.js",
+    "patch-v10.30-ui.js",
+    "patch-v10.32-monster-levels.js",
+    "patch-v10.35-ui.js",
+    "patch-v10.35-rp-vector.js",
+    "patch-v10.35-integrity.js"
+  ];
+  window.__RWS_EXPECTED_RELEASE__="v"+VERSION;
+  let completed=false;
+  window.RWS34Mount=function(html){
+    if(completed)return;completed=true;
+    if(typeof html!=="string"||!html.includes("</body>")||!html.includes('id="tab-rebirth"'))throw Error("Application template is incomplete");
+    // The template is fully transformed before mounting. Do not nest document.write calls.
+    html=html.replace('<div class="version">v10.10</div>','<div class="version">v10.35</div>');
+    const scripts=files.map(function(file){
+      return '<scr'+'ipt src="./'+file+'?release='+VERSION+'"></scr'+'ipt>';
+    }).join("\n");
+    html=html.replace("</body>",scripts+"\n</body>");
+    document.open();
+    document.write(html);
+    document.close();
+  };
+  const loader=document.createElement("script");
+  loader.src="./loader-v10.34.js?release="+VERSION;
+  loader.onerror=function(){
+    const label=document.getElementById("bootInfo");
+    if(label)label.textContent="로더 파일을 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 이 v10.35 주소를 새로 열어주세요.";
+  };
+  document.head.appendChild(loader);
+})();
+</script>
+</body>
+</html>
