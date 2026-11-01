@@ -1,7 +1,7 @@
 {
-  "version": "10.37",
+  "version": "10.38",
   "released": "2026-11-01",
-  "name": "RWS v10.37 - SP 증가 RP 임시 가격 보정",
-  "notes": "RP 상점의 SP증가 필요 RP값 수정(임시). +24 실측 1,580 RP와 기존 실측 구간을 기준으로 중간 구간을 재추정했습니다.",
-  "entry": "app-v10.37.html"
+  "name": "RWS v10.38 - 몬스터 등장지역 수정",
+  "notes": "몬스터 등장지역 수정",
+  "entry": "app-v10.38.html"
 }
