@@ -1,7 +1,7 @@
 {
-  "version": "10.38",
-  "released": "2026-11-01",
-  "name": "RWS v10.38 - 몬스터 등장지역 수정",
-  "notes": "몬스터 등장지역 수정",
-  "entry": "app-v10.38.html"
+  "version": "10.39",
+  "released": "2026-11-08",
+  "name": "RWS v10.39 - OCR 인식 개선 및 환생 추천 비교",
+  "notes": "OCR 인식 개선 및 환생 추천 결과 비교 기능 추가",
+  "entry": "app-v10.39.html"
 }
