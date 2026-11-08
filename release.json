@@ -1,7 +1,7 @@
 {
-  "version": "10.46",
-  "released": "2026-11-08",
-  "name": "RWS v10.46 - 경험치 OCR 독립 영역 교차검증",
-  "notes": "진행률·현재 경험치·필요 경험치를 각각 분리 인식하고 검증된 값만 자동 입력하도록 개선",
-  "entry": "app-v10.46.html"
+  "version": "10.47",
+  "released": "2026-11-09",
+  "name": "RWS v10.47 - OCR 초기화 오류 긴급 수정",
+  "notes": "replaceOnce 초기화 범위 오류 수정 및 경험치 검출 영역 교정",
+  "entry": "app-v10.47.html"
 }
