@@ -113,7 +113,7 @@ try{
 
 (function rwsOCRLocalV6(){
 'use strict';
-const ID='v10.49 OCR V7 ISOLATED HUD';
+const ID='v10.49 OCR V9 LEVEL TABLE CROSSCHECK';
 function findRange(text,start,end){
   const a=text.indexOf(start),b=text.indexOf(end,a+start.length);
   if(a<0||b<0||b<=a)throw Error('OCR 코드 구조 변경: '+start);
@@ -434,7 +434,7 @@ const recoveryLines=[
   validationTarget
 ].join('\n');
 source=v7ReplaceOnce(source,validationTarget,recoveryLines,'v9 exact level total fallback');
-source=source.replace('const OCR_DEBUG_VERSION="v10.41 OCR V6 ROI+EVIDENCE"','const OCR_DEBUG_VERSION="v10.49 OCR V7 ISOLATED HUD"');
+source=source.replace('const OCR_DEBUG_VERSION="v10.41 OCR V6 ROI+EVIDENCE"','const OCR_DEBUG_VERSION="v10.49 OCR V9 LEVEL TABLE CROSSCHECK"');
 })();
   // Validate final replacement before running it.
   new Function(source);
