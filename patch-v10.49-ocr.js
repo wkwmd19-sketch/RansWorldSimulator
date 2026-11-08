@@ -425,7 +425,7 @@ source=v7ReplaceOnce(source,'async function v22RunHudOcr(side){',helper+'\nasync
 const target="    const fused=await v21RunStructuredHud(worker,img,tableTotal,lv);";
 const patch=["    const isolated=await v7ReadIsolatedHud(worker,img,lv,tableTotal);","    if(isolated&&Number.isSafeInteger(isolated.current)){","      const current=isolated.current;","      $('level'+side).value=lv;","      $('expInputMode').value='raw';","      updateExpMode();","      setExpInputValue('exp'+side,current,'raw');","      ocrStatus(side,'인식 완료 · Lv.'+lv+' / EXP '+fmt(current)+' · 독립 영역 교차검증','success');","      ocrRetryVisible(side,true);","      finishOcrDebug(side,{ok:true,engine:'v10.49-isolated-hud',level:lv,current,","        displayedPercent:isolated.percent,liveTotalExp:tableTotal,tableTotalExp:tableTotal,confidence:'high'});","      lastMeasurement=null;","      return;","    }","    const fused=await v21RunStructuredHud(worker,img,tableTotal,lv);"];
 source=v7ReplaceOnce(source,target,patch.join('\n'),'v7 priority recognition');
-const validationTarget="    if(!fused.best)throw new Error(`EXP 후보 교차검증 실패 · Lv.${lv} · OCR 로그를 저장해 주세요.`);";
+const validationTarget="    if(!fused.best){";
 const recoveryLines=[
   '    if(!fused.best && isolated?.partial){',
   '      const recovered=v9RecoverKnownTableCandidate(fused,isolated,tableTotal,lv);',
