@@ -52,11 +52,12 @@ function crop(img,field,variant){
  }
  const c=document.createElement("canvas");
  const sw=Math.round(ww*factor),sh=Math.round(hh*factor);
- c.width=sw+40;c.height=sh+36;
+ const levelCrop=field==="level";
+ c.width=sw+(levelCrop?48:40);c.height=sh+(levelCrop?38:36);
  const ctx=c.getContext("2d",{willReadFrequently:true});
- ctx.fillStyle="#0d1320";ctx.fillRect(0,0,c.width,c.height);
+ ctx.fillStyle=levelCrop?"#101827":"#0d1320";ctx.fillRect(0,0,c.width,c.height);
  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";
- ctx.drawImage(img,x,y,ww,hh,20,18,sw,sh);
+ ctx.drawImage(img,x,y,ww,hh,levelCrop?24:20,18,sw,sh);
  if(variant%2){
   const d=ctx.getImageData(0,0,c.width,c.height);
   for(let i=0;i<d.data.length;i+=4){
