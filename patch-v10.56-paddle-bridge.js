@@ -201,7 +201,8 @@ async function run(side){
 let installed=false,attempts=0;
 function install(){
  if(installed)return true;
- if(!window.RWS56Paddle||!$("ocrStatusA")||!$("ocrStatusB")||
+ if(!window.RWS56Paddle||!window.__RWS53_OCR_SAFE_FALLBACK_INSTALLED__||
+    !$("ocrStatusA")||!$("ocrStatusB")||
     typeof window.runHudOcr!=="function"||typeof window.queueHudOcr!=="function")return false;
  window.runHudOcr=run;
  let queue=Promise.resolve();
