@@ -50,7 +50,7 @@ body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b102
     // Remove legacy Tesseract CDN dependency; v3 uses PaddleOCR.
     html=html.replace('<scr'+'ipt src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></scr'+'ipt>','');
     const scripts=files.map(function(file){
-      return '<scr'+'ipt src="./'+file+'?release='+VERSION+'"></scr'+'ipt>';
+      return '<scr'+'ipt src="./'+file+'?release='+VERSION+(file==='patch-v11.00-ui.js'?'&notes=2':'')+'"></scr'+'ipt>';
     }).join("\n");
     html=html.replace("</body>",scripts+"\n</body>");
     document.open();
