@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta name="color-scheme" content="dark">
+<title>RansWorldSimulator v11.22</title>
+<style>
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b1020;color:#dce8fa;font-family:system-ui,"Noto Sans KR",sans-serif}
+#boot{padding:24px;max-width:500px;text-align:center}
+#boot b{display:block;font-size:23px;margin-bottom:10px}
+#boot p{font-size:13px;color:#a6b9d7;line-height:1.7}
+#boot a{color:#a4d6ff}
+</style>
+</head>
+<body>
+<div id="boot"><b>RansWorldSimulator v11.22</b><p id="bootInfo">PaddleOCR v3 및 RWS 계산기를 불러오는 중...</p></div>
+<script>
+(function(){
+  "use strict";
+  const VERSION="11.22";
+  const files=[
+    "patch-v11.22-badge.js",
+    "patch-v10.12.js",
+    "egg-image-v10.12.js",
+    "patch-v10.13.js",
+    "patch-v10.53-ocr.js",
+    "patch-v11.00-paddle-engine.js",
+    "patch-v11.2-paddle-bridge.js",
+    "patch-v10.23-exp.js",
+    "patch-v10.24-rp.js",
+    "patch-v10.26-titles.js",
+    "patch-v11.22-rebirth.js",
+    "patch-v10.28-rp-table.js",
+    "patch-v10.30-ui.js",
+    "patch-v11.2-monster-levels.js",
+    "patch-v11.01-pet.js",
+    "patch-v11.22-ui.js",
+    "patch-v10.35-rp-vector.js",
+    "patch-v10.37-sp-prices.js",
+    "patch-v11.02-pet-tab.js",
+    "patch-v11.21-penalty.js",
+    "patch-v11.22-integrity.js",
+    "patch-v11.2-exp-compare.js",
+    "patch-v11.2-context-help.js",
+    "patch-v11.2-level-exp.js",
+    "patch-v11.2-layout.js"
+  ];
+  window.__RWS_EXPECTED_RELEASE__="v"+VERSION;
+  let completed=false;
+  window.RWS34Mount=function(html){
+    if(completed)return;completed=true;
+    if(typeof html!=="string"||!html.includes("</body>")||!html.includes('id="tab-rebirth"'))throw Error("Application template is incomplete");
+    // The template is fully transformed before mounting. Do not nest document.write calls.
+    html=html.replace('<div class="version">v10.10</div>','<div class="version">v11.22</div>');
+    // Replace the redundant incremental-efficiency column with the existing Lv → next Lv EXP requirement.
+    const oldExpHeader='<th>추가 RP/h</th>';
+    if(html.split(oldExpHeader).length!==2)throw Error('환생 후보 표의 열 구조가 변경되었습니다.');
+    html=html.replace(oldExpHeader,'<th title="해당 레벨에서 다음 레벨까지 필요한 경험치">필요 EXP</th>');
+    const charge='petState.spent+=PET_ROLL_COST;';
+    if(html.split(charge).length!==3)throw Error('펫 비용 계산식 구조가 예상과 다릅니다.');
+    html=html.replaceAll(charge,'petState.spent+=(window.__RWS1101_DICE_COSTS__?.[petState.type]??PET_ROLL_COST);');
+    const oldLogoAction='$("brandLogo").addEventListener("click",registerPetLogoClick);';
+    if(html.split(oldLogoAction).length!==2)throw Error('펫 이스터에그 함수 연결을 찾지 못했습니다.');
+    html=html.replace(oldLogoAction,'');
+    const oldBackdrop='$("petSimulatorModal").addEventListener("click",e=>{if(e.target===$("petSimulatorModal"))closePetSimulator()});';
+    if(html.split(oldBackdrop).length!==2)throw Error('펫 팝업 배경 동작을 찾지 못했습니다.');
+    html=html.replace(oldBackdrop,'');
+    // Remove legacy Tesseract CDN dependency; v3 uses PaddleOCR.
+    html=html.replace('<scr'+'ipt src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></scr'+'ipt>','');
+    const scripts=files.map(function(file){
+      return '<scr'+'ipt src="./'+file+'?release='+VERSION+(file==='patch-v11.22-ui.js'?'&notes=3':'')+'"></scr'+'ipt>';
+    }).join("\n");
+    html=html.replace("</body>",scripts+"\n</body>");
+    document.open();
+    document.write(html);
+    document.close();
+  };
+  const loader=document.createElement("script");
+  loader.src="./loader-v11.2.js?release="+VERSION;
+  loader.onerror=function(){
+    const label=document.getElementById("bootInfo");
+    if(label)label.textContent="로더 파일을 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 이 v11.22 주소를 새로 열어주세요.";
+  };
+  document.head.appendChild(loader);
+})();
+</script>
+</body>
+</html>

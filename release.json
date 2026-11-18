@@ -1,7 +1,7 @@
 {
-  "version": "11.21",
+  "version": "11.22",
   "released": "2026-11-18",
-  "name": "RWS v11.21 - 버그 수정",
-  "notes": "버그 수정",
-  "entry": "app-v11.21.html"
+  "name": "RWS v11.22 - 환생 레벨표 개선",
+  "notes": "환생 타이밍 추천의 레벨별 필요 EXP 표시 및 추가 RP/h 열 제거",
+  "entry": "app-v11.22.html"
 }
