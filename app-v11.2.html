@@ -36,7 +36,7 @@ body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b102
     "patch-v10.30-ui.js",
     "patch-v11.2-monster-levels.js",
     "patch-v11.01-pet.js",
-    "patch-v11.2-ui.js",
+    "patch-v11.2-ui-hotfix.js",
     "patch-v10.35-rp-vector.js",
     "patch-v10.37-sp-prices.js",
     "patch-v11.02-pet-tab.js",
@@ -66,7 +66,7 @@ body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b102
     // Remove legacy Tesseract CDN dependency; v3 uses PaddleOCR.
     html=html.replace('<scr'+'ipt src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></scr'+'ipt>','');
     const scripts=files.map(function(file){
-      return '<scr'+'ipt src="./'+file+'?release='+VERSION+(file==='patch-v11.2-ui.js'?'&notes=3':'')+'"></scr'+'ipt>';
+      return '<scr'+'ipt src="./'+file+'?release='+VERSION+(file==='patch-v11.2-ui-hotfix.js'?'&notes=3':'')+'"></scr'+'ipt>';
     }).join("\n");
     html=html.replace("</body>",scripts+"\n</body>");
     document.open();
