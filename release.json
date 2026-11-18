@@ -1,7 +1,7 @@
 {
-  "version": "11.22",
+  "version": "11.23",
   "released": "2026-11-18",
-  "name": "RWS v11.22 - 환생 레벨표 개선",
-  "notes": "환생 타이밍 추천의 레벨별 필요 EXP 표시 및 추가 RP/h 열 제거",
-  "entry": "app-v11.22.html"
+  "name": "RWS v11.23 - 환생 레벨표 열 순서 변경",
+  "notes": "환생 타이밍 추천 후보 레벨표 열 순서 변경 (Lv / 필요 EXP / 예상 도달 시각 / 환생 RP / 누적 RP/h)",
+  "entry": "app-v11.23.html"
 }
