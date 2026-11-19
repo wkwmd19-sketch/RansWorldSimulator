@@ -1,7 +1,7 @@
 {
-  "version": "11.23",
-  "released": "2026-11-18",
-  "name": "RWS v11.23 - 환생 레벨표 열 순서 변경",
-  "notes": "환생 타이밍 추천 후보 레벨표 열 순서 변경 (Lv / 필요 EXP / 예상 도달 시각 / 환생 RP / 누적 RP/h)",
-  "entry": "app-v11.23.html"
+  "version": "11.24",
+  "released": "2026-11-19",
+  "name": "RWS v11.24 - OCR 실패 화면 개선",
+  "notes": "OCR 실패 화면 간소화 및 수동 입력 안내 개선 · 게임 창 캡처 EXP 판독 영역 보완",
+  "entry": "app-v11.24.html"
 }
