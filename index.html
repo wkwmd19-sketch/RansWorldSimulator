@@ -18,13 +18,13 @@ body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b102
 <main class="rws-route">
 <h1>RansWorldSimulator</h1>
 <p id="routeStatus" role="status">최신 배포 파일을 확인하는 중...</p>
-<p><a href="./app-v11.34.html?fix=pq2">v11.34로 직접 접속하기</a></p>
+<p><a href="./app-v11.35.html">v11.35로 직접 접속하기</a></p>
 </main>
 <script>
 (function RWSStableRouter(){
   "use strict";
   // This URL is a stable entry point. Each actual app release has an immutable filename.
-  const FALLBACK={version:"11.34",entry:"app-v11.34.html"};
+  const FALLBACK={version:"11.35",entry:"app-v11.35.html"};
   const $=id=>document.getElementById(id);
   const parse=v=>{const m=String(v||"").replace(/^v/i,"").match(/^(\d+)\.(\d+)(?:\.(\d+))?$/);return m?[+m[1],+m[2],+(m[3]||0)]:null};
   const compare=(a,b)=>{const x=parse(a),y=parse(b);if(!x||!y)return 0;for(let i=0;i<3;i++)if(x[i]!==y[i])return x[i]-y[i];return 0};
@@ -63,13 +63,11 @@ body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b102
     if(target.entry!==FALLBACK.entry&&!(await canServe(target.entry)))target=FALLBACK;
     $("routeStatus").textContent="v"+target.version+" 독립 페이지로 이동 중...";
     const url=new URL("./"+target.entry,location.href);
-    // v11.34 in-place hotfix: bypass the cached pre-fix entry.
-    if(target.version==="11.34")url.searchParams.set("fix","pq2");
     location.replace(url.href);
   }
   route().catch(err=>{
     console.error("[RWS Router] Could not resolve release",err);
-    $("routeStatus").textContent="버전 확인에 실패했습니다. 아래 링크에서 v11.34 사이트를 직접 열어주세요.";
+    $("routeStatus").textContent="버전 확인에 실패했습니다. 아래 링크에서 v11.35 사이트를 직접 열어주세요.";
   });
 })();
 </script>
